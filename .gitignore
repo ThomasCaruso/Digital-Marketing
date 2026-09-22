@@ -1,0 +1,36 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Dependencies / builds
+node_modules/
+dist/
+build/
+.next/
+.expo/
+
+# Python / model work
+.venv/
+venv/
+__pycache__/
+*.pyc
+.cache/
+models/
+checkpoints/
+
+# Local data / experiment outputs
+data/private/
+experiments/**/outputs/
+experiments/**/inputs/private/
+*.sqlite
+*.db
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
