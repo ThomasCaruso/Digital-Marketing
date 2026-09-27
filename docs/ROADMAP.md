@@ -36,6 +36,26 @@ Exit criteria:
 
 ## Phase 2 — Real commerce catalog
 
+Status: IN PROGRESS — Phase 2A "commerce spine" COMPLETE (2026-09-27). The
+provider-independent catalog layer is built, persisted, and verified WITHOUT
+live provider credentials. Landed: `NormalizedProduct` / `ProductProvider` /
+`ProductSearchIntent` / filter-criteria contracts (`src/catalog/`), a pure
+validation gate (`validation.ts`), deterministic filters with the
+unknown ≠ unavailable size distinction (`filter.ts`), integer money helpers
+(`money.ts`), a deterministic fixture provider (24 records, reserved
+`.example` domains only, `metadata.source = "fixture"`), a Rakuten boundary
+stub that throws `NOT_CONFIGURED` / `NOT_IMPLEMENTED`
+(`providers/rakuten.ts`), Postgres persistence
+(`supabase/migrations/0004_catalog.sql`: `products` + `provider_sync_runs`,
+RLS read-only for clients, service-role-only writes), and the ingestion
+pipeline with per-run audit rows (`ingest.ts` / `store.ts`). Verification:
+`npm run verify:catalog` 98/98 on PGlite; migration 0004 applied to the
+hosted project and `npm run smoke:catalog` 20/20 on hosted; Phase 1 suites
+remain green (`npm run verify:sql` 32/32, `npm run smoke` 37/37).
+NOT landed yet: a live provider implementation (Rakuten search + deep
+links), affiliate URL resolution, semantic search, and any app-facing query
+API.
+
 Goal: remove mock product records.
 
 Deliverables:
@@ -160,6 +180,9 @@ Possible directions:
 
 ## Immediate next three engineering tasks
 
-1. Create Supabase schema and RLS design.
-2. Implement a real `ProductProvider` interface with one provider.
-3. Build the VTON benchmark harness before committing to a long-term image provider.
+1. Implement the first live provider behind `ProductProvider` (Rakuten
+   product search + deep links) against its real API documentation.
+2. Build the strict GLM intent/ranking schemas on top of the catalog's
+   `ProductSearchIntent` and deterministic filters.
+3. Build the VTON benchmark harness before committing to a long-term image
+   provider.

@@ -7,11 +7,13 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "verify:sql": "tsx scripts/verify-migrations.ts",
+    "verify:catalog": "tsx scripts/verify-catalog.ts",
     "smoke": "tsx scripts/smoke-profile.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "functions:serve": "supabase functions serve signed-url"
+    "functions:serve": "supabase functions serve signed-url",
+    "smoke:catalog": "tsx scripts/smoke-catalog.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0"

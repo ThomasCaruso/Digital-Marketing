@@ -15,10 +15,11 @@ The repository currently contains:
 - **VTON benchmark plan:** `experiments/vton-benchmark/`
 - **Safe environment-variable scaffold:** `.env.example`
 - **Phase 1 profile spine (complete, validated on hosted Supabase):** `supabase/` (migrations, RLS, private storage, `signed-url` Edge Function), `src/types/` (Phase 1 contracts), `scripts/` (SQL verification + end-to-end smoke suite)
+- **Phase 2A commerce spine (complete, validated on hosted Supabase):** `src/catalog/` (provider-independent catalog: `NormalizedProduct` contract, validation gate, deterministic filters, integer money, fixture provider, Rakuten boundary stub, ingestion), `supabase/migrations/0004_catalog.sql` (`products` + `provider_sync_runs`, RLS read-only for clients), `scripts/verify-catalog.ts` + `scripts/smoke-catalog.ts`
 
 The current website is intentionally isolated. Project scaffolding does not modify it.
 
-SQL structure and RLS are verified locally on every run (`npm run verify:sql`, real Postgres via PGlite — no Docker needed). Phase 1 is also validated on the hosted Supabase project: migrations applied, private bucket confirmed, `signed-url` Edge Function deployed, and the hosted smoke suite passes end to end (`npm run smoke`, 37/37).
+SQL structure and RLS are verified locally on every run (`npm run verify:sql`, real Postgres via PGlite — no Docker needed), and the catalog layer has its own deterministic suite (`npm run verify:catalog`, 98 invariants: contract, validation, dedupe, filters, size semantics, money, constraints, ingestion, RLS). Hosted validation (2026-09-27): all four migrations applied to the hosted Supabase project; `npm run smoke` (Phase 1, 37/37) and `npm run smoke:catalog` (Phase 2A, 20/20) both pass end to end. There is no live commerce provider yet — the `rakuten` provider is an intentional stub that throws `NOT_CONFIGURED` / `NOT_IMPLEMENTED`.
 
 Live concept:
 https://thomascaruso.github.io/Digital-Marketing/
@@ -97,8 +98,8 @@ Start here:
 
 The next engineering sequence is:
 
-1. First real `ProductProvider`.
-2. Strict GLM intent/ranking schemas.
+1. First real `ProductProvider` implementation (Rakuten) behind the existing catalog boundary.
+2. Strict GLM intent/ranking schemas on top of `ProductSearchIntent` + deterministic filters.
 3. Hosted FASHN integration for the first real try-on.
 4. Self-hosted VTON benchmark.
 5. Preference-learning loop.

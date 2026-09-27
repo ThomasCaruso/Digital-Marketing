@@ -37,6 +37,68 @@ corrections, all deliberate:
    "0 rows affected" as not-found. Anonymous principals have no policies and
    see zero rows.
 
+## Phase 2 implementation notes (2026-09-27)
+
+Phase 2A implements the catalog spine in `supabase/migrations/0004_catalog.sql`
+with the TypeScript contract in `src/catalog/`. The conceptual schema below
+remains the source spec; the migration layer made these production decisions,
+all deliberate:
+
+1. **Money columns, not numerics:** `price` / `sale_price` become
+   `price_cents` / `sale_price_cents` — INTEGER MINOR UNITS (US cents),
+   continuing the Phase 1 convention. Postgres silently ROUNDS a fractional
+   numeric into an `integer` column, so the real enforcement point for
+   "integer money" is the TypeScript validation gate
+   (`src/catalog/validation.ts`, `Number.isSafeInteger`) which runs BEFORE
+   any write; the DB adds `>= 0` CHECKs.
+2. **Upsert identity:** `UNIQUE (provider, provider_product_id)`. Ingestion
+   upserts on this pair — provider-owned columns refresh, while the FORM
+   `id`, `created_at` stay sticky across syncs and `updated_at` is refreshed
+   by trigger. Duplicate ids WITHIN one provider batch are collapsed to the
+   LAST occurrence before the write (`src/catalog/validation.ts`
+   `dedupeProducts`).
+3. **Categories are a closed set:** `category` is constrained to
+   `tops | bottoms | outerwear | one_piece | shoes | accessories | other`.
+   Provider-native category strings are preserved in `metadata`
+   (e.g. `metadata.providerCategory`), not in `category`.
+4. **No `product_images` table in Phase 2A.** The conceptual table is
+   replaced by a `image_urls jsonb` array — nothing in the current loop needs
+   per-image rows, and the array round-trips 1:1 with the TypeScript
+   `imageUrls` contract. Revisit only if per-image metadata (position,
+   image_type) becomes real. Likewise no `product_variants` table: no live
+   provider evidence yet requires per-variant rows.
+5. **Empty array means UNKNOWN.** `available_sizes` / `available_colors` are
+   jsonb arrays where `[]` means "provider did not say", never "confirmed
+   none". `availability_confidence` is constrained to
+   `confirmed | partial | unknown` and is never inferred. Filtering code
+   (`src/catalog/filter.ts`) keeps the three size outcomes distinct:
+   confirmed-match / confirmed-no-match / unknown.
+6. **Contradictory sale prices are gated, not silently normalized.**
+   `CHECK (sale_price_cents IS NULL OR sale_price_cents <= price_cents OR
+   metadata ->> 'sale_price_anomaly' IS NOT NULL)` mirrors the TypeScript
+   rule: a sale price above the regular price is rejected unless the adapter
+   explicitly preserved the source contradiction under
+   `metadata.sale_price_anomaly`.
+7. **URL validity lives above the database.** CHECK constraints cannot
+   contain subqueries, so well-formedness of `product_url` / `affiliate_url`
+   / every `image_urls` entry is enforced by `validateNormalizedProduct`
+   (http/https only) BEFORE persistence; the DB enforces non-emptiness and
+   jsonb array typing only.
+8. **`provider_sync_runs` counters renamed against the conceptual block:**
+   `records_seen` / `records_written` become `records_received` (pre-dedupe,
+   pre-validation), `records_inserted`, and `records_updated`.
+   `status` is constrained to `running | succeeded | failed`, counts are
+   `>= 0`, and `completed_at >= started_at` is enforced. Validation
+   rejections and provider failures are recorded per-run in `error_summary`.
+9. **Catalog security posture:** catalog rows are APPLICATION data, not
+   user-owned data, so there is deliberately no ownership/RLS-by-user
+   machinery. RLS is still ENABLED on both tables (defense in depth):
+   `products` has a single read-only `SELECT ... to authenticated` policy;
+   `provider_sync_runs` has NO client policies (service role only). No
+   INSERT/UPDATE/DELETE policy exists for anon or authenticated on either
+   table — catalog mutation is a trusted server-side (service-role)
+   operation. Anonymous principals see zero rows, consistent with Phase 1.
+
 
 ## profiles
 

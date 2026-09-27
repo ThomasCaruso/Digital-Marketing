@@ -101,3 +101,58 @@ Events should include:
 - no separate Express/Fastify/Next.js server is introduced;
 - code under `supabase/functions/` uses Deno-style imports (`jsr:` / `npm:`) and is type-checked by Deno, not the repo's Node `tsc` config;
 - business logic is kept in small modules so later extraction remains cheap.
+
+## TD-013 — Canonical normalized catalog, provider adapters, Postgres persistence
+
+**Decision (Phase 2A, 2026-09-27):**
+
+1. **One canonical product shape.** All commerce data passes through the
+   `NormalizedProduct` contract (`src/catalog/types.ts`). Providers are
+   integrated as adapters implementing `ProductProvider`
+   (`src/catalog/provider.ts`) that translate provider-native responses into
+   that shape before FORM logic sees them; provider-specific values live in
+   `metadata` (e.g. `metadata.providerCategory`), never in shared fields.
+2. **PostgreSQL persistence as application data.** The catalog lives in
+   `public.products` and `public.provider_sync_runs`
+   (`supabase/migrations/0004_catalog.sql`). These are NOT user-owned rows:
+   RLS is enabled with a single read-only `SELECT` policy for authenticated
+   clients, and there are no client mutation policies at all — writes happen
+   only through trusted server-side processes (service role). Anonymous
+   principals see zero rows, matching the Phase 1 lockdown posture.
+   No user-ownership machinery is imposed on catalog rows.
+3. **Deterministic ingestion.** `src/catalog/ingest.ts` runs one pipeline:
+   search → dedupe (LAST occurrence per `(provider, provider_product_id)`
+   wins, matching upsert semantics) → validate → upsert (match on
+   `(provider, provider_product_id)`; the FORM `id` and `created_at` stay
+   sticky across syncs) → one `provider_sync_runs` audit row per attempt,
+   including failures. No cron, queues, Redis, or a search engine — Postgres
+   is enough at this scale.
+4. **Unknown availability remains unknown.** `availability_confidence` is one
+   of `confirmed | partial | unknown` and is never inferred. An empty
+   `available_sizes` / `available_colors` array means UNKNOWN, never
+   "confirmed none". Size filtering therefore has three outcomes
+   (`src/catalog/filter.ts`): confirmed-match, confirmed-no-match, unknown —
+   and unknown-size products survive a size filter unless the caller
+   explicitly passes `requireConfirmedSizeAvailability`.
+5. **Money stays integer minor units** (Phase 1 convention, continued):
+   `price_cents` / `sale_price_cents` / `minPriceCents` / `maxPriceCents`.
+   No floating point anywhere in catalog money.
+6. **Contradictory prices are not silently normalized.** A sale price above
+   the regular price is rejected by the validation gate unless the adapter
+   explicitly preserved the source contradiction under
+   `metadata.sale_price_anomaly`; the typed price fields never encode it.
+
+**Reason:** TD-002 (provider independence) needs a concrete, tested boundary
+before the first live provider; deterministic filtering is also what will
+keep the GLM ranker honest in Phase 3 (TD-001).
+
+**Guardrails:**
+- FORM application logic never references provider field names;
+- every record passes `validateNormalizedProduct` before persistence —
+  validation rejects, it never repairs or guesses;
+- the Rakuten adapter is a stub that throws `NOT_CONFIGURED` /
+  `NOT_IMPLEMENTED` (`src/catalog/providers/rakuten.ts`) — endpoint response
+  shapes must come from live API documentation, never from memory;
+- fixture data (the `fixture` provider) uses RFC 2606 reserved `.example`
+  domains and is marked `metadata.source = "fixture"` so it can never be
+  mistaken for live commerce.
