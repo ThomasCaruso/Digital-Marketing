@@ -36,25 +36,26 @@ Exit criteria:
 
 ## Phase 2 — Real commerce catalog
 
-Status: IN PROGRESS — Phase 2A "commerce spine" COMPLETE (2026-09-27). The
-provider-independent catalog layer is built, persisted, and verified WITHOUT
-live provider credentials. Landed: `NormalizedProduct` / `ProductProvider` /
-`ProductSearchIntent` / filter-criteria contracts (`src/catalog/`), a pure
-validation gate (`validation.ts`), deterministic filters with the
-unknown ≠ unavailable size distinction (`filter.ts`), integer money helpers
-(`money.ts`), a deterministic fixture provider (24 records, reserved
-`.example` domains only, `metadata.source = "fixture"`), a Rakuten boundary
-stub that throws `NOT_CONFIGURED` / `NOT_IMPLEMENTED`
-(`providers/rakuten.ts`), Postgres persistence
-(`supabase/migrations/0004_catalog.sql`: `products` + `provider_sync_runs`,
-RLS read-only for clients, service-role-only writes), and the ingestion
-pipeline with per-run audit rows (`ingest.ts` / `store.ts`). Verification:
-`npm run verify:catalog` 98/98 on PGlite; migration 0004 applied to the
-hosted project and `npm run smoke:catalog` 20/20 on hosted; Phase 1 suites
-remain green (`npm run verify:sql` 32/32, `npm run smoke` 37/37).
-NOT landed yet: a live provider implementation (Rakuten search + deep
-links), affiliate URL resolution, semantic search, and any app-facing query
-API.
+Status: IN PROGRESS — Phase 2A "commerce spine" COMPLETE (2026-09-27); Phase
+2B "live Rakuten adapter" IMPLEMENTED BUT LIVE VALIDATION PENDING
+(2026-09-27). The provider-independent catalog layer is built, persisted, and
+verified, and the Rakuten adapter is now REAL (no longer a stub): documented
+Product Search integration (bearer auth, XML parsing, exact integer money,
+MID+SKU merchant-scoped identity, deterministic category mapping, best-effort
+intent pre-filtering with documented ceilings), lazy failure-tolerant Deep
+Links for `affiliateUrl`, single-flight bearer-token caching (regenerating a
+token expires the previous one), bounded transient-only retry, and typed
+`AUTH_FAILED` vs `PROVIDER_ERROR` separation (TD-014). Verification:
+`npm run verify:rakuten` 82/82 fully offline (injected network + XML
+fixtures); `npm run verify:catalog` 98/98 on PGlite; migration 0004 applied
+to the hosted project and `npm run smoke:catalog` 20/20 on hosted; Phase 1
+suites remain green (`npm run verify:sql` 32/32, `npm run smoke` 37/37).
+PENDING: no Rakuten credentials exist in the local environment yet, so no
+real API call has been made — `npm run smoke:rakuten` gates on credentials
+and will run the three-query live protocol (search quality measurement,
+deep-link probe, marked 2-record hosted ingestion + cleanup) the moment they
+are present. NOT landed yet: affiliate URL resolution against the live
+endpoint, semantic search, and any app-facing query API.
 
 Goal: remove mock product records.
 

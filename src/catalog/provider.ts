@@ -25,6 +25,9 @@ export type CatalogProviderErrorCode =
   | "NOT_CONFIGURED"
   /** The adapter boundary exists but the integration is not implemented. */
   | "NOT_IMPLEMENTED"
+  /** The provider rejected the FORM credentials itself (auth failure —
+   *  distinct from a search failure so callers can alert differently). */
+  | "AUTH_FAILED"
   /** The provider was reachable but answered with an error. */
   | "PROVIDER_ERROR";
 

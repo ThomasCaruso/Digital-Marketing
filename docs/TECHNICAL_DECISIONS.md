@@ -150,9 +150,64 @@ keep the GLM ranker honest in Phase 3 (TD-001).
 - FORM application logic never references provider field names;
 - every record passes `validateNormalizedProduct` before persistence —
   validation rejects, it never repairs or guesses;
-- the Rakuten adapter is a stub that throws `NOT_CONFIGURED` /
-  `NOT_IMPLEMENTED` (`src/catalog/providers/rakuten.ts`) — endpoint response
-  shapes must come from live API documentation, never from memory;
+- the Rakuten adapter lives at `src/catalog/providers/rakuten/` (a real
+  integration since Phase 2B, TD-014) — endpoint response shapes must come
+  from live API documentation, never from memory;
 - fixture data (the `fixture` provider) uses RFC 2606 reserved `.example`
   domains and is marked `metadata.source = "fixture"` so it can never be
   mistaken for live commerce.
+
+## TD-014 — Rakuten adapter is live-shaped, optionally authenticated, and offline-testable
+
+**Decision (Phase 2B, 2026-09-27):**
+
+1. **The adapter is implemented only from captured official documentation**
+   (Product Search, Deep Links, Access Tokens guides, retrieved 2026-09-27 —
+   see docs/RESEARCH_NOTES.md for the full capture and the two gaps). The
+   Phase 2A stub is replaced by `src/catalog/providers/rakuten/` (http, token,
+   xml, categories, normalize, deeplink, index).
+2. **Two documented auth paths, both injectable.** A static bearer token from
+   the developer portal Applications page (`RAKUTEN_BEARER_TOKEN`), or the
+   Token API client-credential pair (`RAKUTEN_CLIENT_ID` +
+   `RAKUTEN_CLIENT_SECRET`). The env audit outcome: the old
+   `RAKUTEN_CLIENT_ID/SECRET` names match the documented Applications-page
+   credential pair and stay; `RAKUTEN_BEARER_TOKEN` is new. Issuing a new
+   token expires the previous one (documented), so the token cache is
+   single-flight and refreshes shortly before expiry. No token is ever
+   hardcoded, logged, or thrown.
+3. **Identity is merchant-scoped:** `MID:SKU`, falling back to
+   `MID:link-<linkid>` for SKU-less feeds — SKUs are NOT globally unique
+   across merchants. FORM ids are deterministic UUIDv5s of that identity.
+4. **Money is parsed from decimal STRINGS to integer minor units** (never
+   `parseFloat`); malformed prices skip the item (counted), they never fail
+   the search.
+5. **Availability stays unknown.** The documented response has no size,
+   color, brand, or stock fields: `availableSizes`/`availableColors` stay
+   `[]`, `availabilityConfidence` stays `unknown`, `brand`/`color` stay
+   `null` — never derived from titles or descriptions.
+6. **Deep links are lazy, optional enrichment.** `createAffiliateLink` /
+   `resolveAffiliateLinks` (bounded concurrency) cache successes; ANY failure
+   leaves the product untouched with `affiliateUrl` absent and `productUrl`
+   (the provider's `linkurl`) canonical. `productUrl` and `affiliateUrl`
+   remain semantically separate.
+7. **Resilience is minimal and typed:** per-attempt timeout, bounded
+   transient-only retry (429 honoring a capped Retry-After, 5xx, network),
+   NO retry on auth/config statuses; 401/403 surface as a distinct
+   `AUTH_FAILED` code (added to `CatalogProviderErrorCode` additively),
+   separate from search failures (`PROVIDER_ERROR`).
+8. **The network is always injectable.** `verify:rakuten` (82 invariants)
+   runs entirely on an injected fetch with inline XML fixtures — no test
+   touches a real endpoint by default. The only live path is the gated
+   `smoke:rakuten`, which SKIPs without credentials. XML parsing uses
+   fast-xml-parser PINNED to v4 (v5 stopped decoding numeric character
+   references — product names like `Men&#39;s` must not be stored
+   literally); no regex parsing anywhere.
+
+**Guardrails:**
+- endpoint shapes may only change from re-verified documentation, never from
+  memory (TD-013 rule continues);
+- the single known-unverified surface is the Token API wire format
+  (`token.ts`) — any live-validated correction is a one-file fix;
+- "implemented" is not "live-validated": until `npm run smoke:rakuten`
+  completes against real credentials, Phase 2's live-provider work is
+  IMPLEMENTED BUT LIVE VALIDATION PENDING.

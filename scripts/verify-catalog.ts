@@ -28,7 +28,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { POST_MIGRATION_GRANTS, SUPABASE_STUBS } from "./lib/supabase-stubs.js";
 import { FIXTURE_PRODUCTS, FixtureProductProvider } from "../src/catalog/providers/fixture.js";
-import { RakutenProductProvider } from "../src/catalog/providers/rakuten.js";
+import { RakutenProductProvider } from "../src/catalog/providers/rakuten/index.js";
 import { CatalogProviderError, type ProductProvider } from "../src/catalog/provider.js";
 import { dedupeProducts, validateNormalizedProduct } from "../src/catalog/validation.js";
 import { classifySizeMatch, filterProducts } from "../src/catalog/filter.js";
@@ -772,7 +772,7 @@ async function verifyDatabase(): Promise<void> {
     failedRun?.status === "failed" && failedRun?.error_summary?.stage === "provider_search",
   );
 
-  section("PROVIDER BOUNDARY — stubs fail loudly, fixtures stay deterministic");
+  section("PROVIDER BOUNDARY — adapters fail loudly, fixtures stay deterministic");
   const rakuten = new RakutenProductProvider();
   let rakutenError: CatalogProviderError | null = null;
   try {
@@ -780,18 +780,26 @@ async function verifyDatabase(): Promise<void> {
   } catch (err) {
     if (err instanceof CatalogProviderError) rakutenError = err;
   }
-  record("unconfigured Rakuten stub throws NOT_CONFIGURED", rakutenError?.code === "NOT_CONFIGURED");
+  record("unconfigured Rakuten adapter throws NOT_CONFIGURED", rakutenError?.code === "NOT_CONFIGURED");
 
-  const configuredRakuten = new RakutenProductProvider({ clientId: "x", clientSecret: "y" });
-  let configuredError: CatalogProviderError | null = null;
+  // Phase 2B: the adapter is real, but its network is injectable — an
+  // injected 401 surfaces as a distinct AUTH_FAILED code without any live
+  // call, keeping auth failures separate from search failures.
+  const rejectingRakuten = new RakutenProductProvider({
+    bearerToken: "test-bearer-token-not-real",
+    fetchImpl: async () =>
+      new Response("unauthorized", { status: 401, headers: { "content-type": "text/plain" } }),
+    sleep: async () => {},
+  });
+  let authError: CatalogProviderError | null = null;
   try {
-    await configuredRakuten.getById("1");
+    await rejectingRakuten.search({ query: "wool coat" });
   } catch (err) {
-    if (err instanceof CatalogProviderError) configuredError = err;
+    if (err instanceof CatalogProviderError) authError = err;
   }
   record(
-    "configured-but-unimplemented Rakuten stub throws NOT_IMPLEMENTED (never fake data)",
-    configuredError?.code === "NOT_IMPLEMENTED",
+    "configured Rakuten adapter surfaces injected 401 as AUTH_FAILED (distinct from search failures)",
+    authError?.code === "AUTH_FAILED" && !authError.message.includes("test-bearer-token-not-real"),
   );
 
   record(

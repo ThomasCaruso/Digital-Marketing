@@ -75,22 +75,72 @@ Action:
 
 ### Rakuten
 
-Useful capabilities researched:
-- product search;
-- merchant/product records;
-- SKU/product identifiers;
-- price/sale price;
-- product image;
-- buy URL;
-- deep-link generation.
+Phase 2B (2026-09-27) captured the live official documentation and implemented
+the adapter against it. The developer portal is a JS-rendered SPA — plain
+fetchers return navigation shells; the guide bodies below were captured with a
+rendering reader. Re-verify before production commitments.
+
+**Verified from current official docs (developers.rakutenadvertising.com):**
+
+- Product Search: `GET https://api.linksynergy.com/productsearch/1.0`,
+  `Authorization: Bearer {token}`, XML-ONLY response, rate limit 100
+  calls/min, max 5,000 results total, page size (`max`) up to 100 (default
+  20), `pagenumber` — requesting a page beyond TotalPages is an ERROR.
+- Query params: `keyword` (all terms), `exact`, `one`, `none`, `cat`,
+  `language` (default en_US), `max`, `pagenumber`, `mid` (advertiser filter),
+  `sort` (retailprice|productname|categoryname|mid), `sorttype` (asc|dsc).
+- Unsupported characters in search terms: `& = ? { } \ ( ) [ ] - ; ~ | $ ! >
+  < * %` — FORM strips them before sending.
+- Response item fields: `mid`, `merchantname`, `linkid`, `createdon`
+  (format like `2020-07-16/05:30:32`), `sku`, `productname`,
+  `category>primary`, `category>secondary` (e.g. `Dresses~~Dress`),
+  `<price currency="USD">`, `<saleprice currency="USD">`, `upccode`,
+  `description>short`, `description>long`, `keywords`, `linkurl`, `imageurl`.
+  There is NO brand, color, size, or stock field — FORM keeps `brand` null,
+  `availableSizes`/`availableColors` empty (unknown), and availability
+  confidence `unknown`.
+- Deep Links: `POST https://api.linksynergy.com/v1/links/deep_links`, Bearer
+  auth, input URL + advertiser_id + optional u1, ONE link per request,
+  requires an approved partnership AND an advertiser that supports deep
+  linking.
+- Bearer tokens come from the developer portal "Applications" page or the
+  Token API; issuing a NEW token immediately expires the previous one —
+  which makes server-side token caching + single-flight refresh a
+  correctness requirement, not an optimization.
+
+**NOT verifiable from portal text (actionable gaps):**
+
+- The Access Tokens guide is screenshot-only, so the exact Token API wire
+  format (endpoint path, request/response fields, `expires_in` semantics)
+  could not be re-verified. The adapter's
+  `ClientCredentialsTokenSource` implements the OAuth 2.0 client-credentials
+  flow corroborated by the prior official portal guide and ecosystem
+  integrations (Basic auth + `grant_type=client_credentials`, ~1h tokens);
+  the endpoint defaults to `https://api.linksynergy.com/token` and is
+  overridable (`RAKUTEN_TOKEN_URL` / config). This is the ONE unverified
+  surface — isolate any live-validated correction to `token.ts`.
+- The Deep Links response example could not be captured textually; link
+  extraction is defensive (first http(s) URL string in the JSON body, in
+  deterministic field order). Confirm the exact shape during live
+  validation; the extractor is one function in `deeplink.ts`.
 
 Architecture implication:
-- Rakuten can be the first `ProductProvider`;
-- size/stock fields must remain "unknown" when the provider does not supply normalized inventory data.
+- Rakuten is the first live `ProductProvider` (`src/catalog/providers/rakuten/`);
+- size/stock fields remain "unknown" — the adapter never invents them;
+- `productUrl` is the provider's `linkurl` (an affiliate-tracked link) and
+  stays semantically separate from `affiliateUrl`, which only ever comes
+  from the Deep Links API;
+- env taxonomy (audit result): the documented mechanism is an application
+  bearer token (Applications page) plus an optional client-credential pair
+  for the Token API — `RAKUTEN_BEARER_TOKEN` (new) and
+  `RAKUTEN_CLIENT_ID`/`RAKUTEN_CLIENT_SECRET` (names kept; they match the
+  Applications-page credential pair), server-side only.
 
 References:
+- https://developers.rakutenadvertising.com/guides/product_search
 - https://developers.rakutenadvertising.com/guides/product_search/reference
 - https://developers.rakutenadvertising.com/guides/deep_link
+- https://developers.rakutenadvertising.com/guides/access_tokens
 
 ### CJ
 

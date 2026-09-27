@@ -8,15 +8,18 @@
     "typecheck": "tsc --noEmit",
     "verify:sql": "tsx scripts/verify-migrations.ts",
     "verify:catalog": "tsx scripts/verify-catalog.ts",
+    "verify:rakuten": "tsx scripts/verify-rakuten.ts",
     "smoke": "tsx scripts/smoke-profile.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "functions:serve": "supabase functions serve signed-url",
-    "smoke:catalog": "tsx scripts/smoke-catalog.ts"
+    "smoke:catalog": "tsx scripts/smoke-catalog.ts",
+    "smoke:rakuten": "tsx scripts/smoke-rakuten.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "fast-xml-parser": "^4.5.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
