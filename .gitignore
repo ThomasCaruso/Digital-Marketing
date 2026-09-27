@@ -19,6 +19,10 @@ __pycache__/
 models/
 checkpoints/
 
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+
 # Local data / experiment outputs
 data/private/
 experiments/**/outputs/

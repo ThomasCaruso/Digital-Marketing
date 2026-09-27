@@ -85,3 +85,19 @@ Events should include:
 ## TD-011 — Existing website is isolated
 
 **Decision:** `ai-stylist-mvp/` remains the current deployed concept. Architecture/scaffold work must not modify it unless a task explicitly says to update the website.
+
+## TD-012 — Supabase Edge Functions are the server runtime
+
+**Decision:** server-side logic (the `catalog`, `orchestrator`, and `vton` boundaries from `services/README.md`) runs as Supabase Edge Functions (Deno/TypeScript) until a workload justifies extraction into a dedicated service.
+
+**Reason:**
+- minimal new infrastructure — the runtime ships with the Supabase project;
+- TypeScript end to end, matching the contracts' shapes;
+- provider secrets stay server-side by construction;
+- native integration with Supabase Auth, Postgres, and Storage;
+- service boundaries can start as internal modules and be extracted later without client-facing contract changes.
+
+**Consequences:**
+- no separate Express/Fastify/Next.js server is introduced;
+- code under `supabase/functions/` uses Deno-style imports (`jsr:` / `npm:`) and is type-checked by Deno, not the repo's Node `tsc` config;
+- business logic is kept in small modules so later extraction remains cheap.

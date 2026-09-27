@@ -2,6 +2,42 @@
 
 This is the conceptual schema for the first production backend. Exact migrations should be created only when the Supabase implementation begins.
 
+## Phase 1 implementation notes (2026-09-27)
+
+Phase 1 is implemented in `supabase/migrations/`. The conceptual schema below
+remains the source spec; the migration layer made these production-required
+corrections, all deliberate:
+
+1. **`profiles.id = auth.users.id`.** The separate `user_id` column is dropped —
+   the primary key IS the ownership root (RLS predicate: `id = auth.uid()`).
+   All dependent tables reference `auth.users(id) ON DELETE CASCADE`.
+2. **Profile column renames:** `height_text`→`height`, `top_size`→`usual_top_size`,
+   `waist_size`→`waist`, `inseam_size`→`inseam`, `default_budget`→`typical_budget`.
+   `shopping_priority` is retained, constrained to stable keys
+   (`balanced | value | premium`; `balanced` maps to the demo's "Best overall look").
+3. **Money is INTEGER MINOR UNITS (US cents)** — never floats. The single money
+   convention for all FORM Postgres data going forward.
+4. **`style_preferences.tag` split into `dimension` + `value`** (e.g.
+   `style/minimal`, `color/black`, `fit/relaxed-outerwear`); `weight` bounded
+   `[-1, 1]` (negative = dislike); `source` constrained to
+   `onboarding | explicit_feedback | behavioral_inference`;
+   `UNIQUE (user_id, dimension, value)`.
+5. **`user_reference_images`** gained `updated_at` and
+   `UNIQUE (user_id, storage_path)`; `image_role` constrained to
+   `front | side | three_quarter | natural | face | other`. Metadata only —
+   bytes live in the private `reference-photos` bucket at
+   `{user_id}/{reference_image_id}/{filename}` (50 MiB, JPEG/PNG/WebP only).
+6. **`user_events.product_id / outfit_id / generation_id` are plain nullable
+   UUIDs with NO foreign keys** — those tables do not exist until Phase 2+.
+   Future migrations add the FKs with `ALTER TABLE ... ADD CONSTRAINT`.
+   `event_type` is constrained to the TD-010 event set.
+7. **RLS shape:** every Phase 1 table has one `FOR ALL ... to authenticated`
+   policy (`USING` + `WITH CHECK` on the owner predicate). Cross-user
+   UPDATE/DELETE is a silent 0-row no-op by design; clients must treat
+   "0 rows affected" as not-found. Anonymous principals have no policies and
+   see zero rows.
+
+
 ## profiles
 
 ```text

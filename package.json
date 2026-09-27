@@ -1,0 +1,26 @@
+{
+  "name": "form",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FORM — AI personal stylist and shopping intelligence. Phase 1: profile spine.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "verify:sql": "tsx scripts/verify-migrations.ts",
+    "smoke": "tsx scripts/smoke-profile.ts",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "functions:serve": "supabase functions serve signed-url"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@types/node": "^22.10.0",
+    "supabase": "^2.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
