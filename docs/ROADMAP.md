@@ -16,8 +16,7 @@ No website changes in this phase.
 
 ## Phase 1 — Persistent user profile
 
-Status: implemented locally (2026-09-27). Completed: Supabase project scaffold (`supabase/`), migrations for profiles / style_preferences / user_reference_images / user_events (`supabase/migrations/`), RLS policies, private `reference-photos` bucket + Storage RLS, `signed-url` Edge Function, TypeScript contracts (`src/types/`), SQL verification suite (`scripts/verify-migrations.ts`, 31/31 passing on PGlite), smoke suite (`scripts/smoke-profile.ts`).
-Pending: create the hosted Supabase project, apply migrations there, and run the smoke suite against it (requires Docker for local, or hosted credentials); connect a real client.
+Status: COMPLETE (2026-09-27). Delivered: Supabase project scaffold (`supabase/`), migrations for profiles / style_preferences / user_reference_images / user_events (`supabase/migrations/`), RLS policies, private `reference-photos` bucket + Storage RLS, `signed-url` Edge Function, TypeScript contracts (`src/types/`), SQL verification suite (`scripts/verify-migrations.ts`, 31/31 passing on PGlite), smoke suite (`scripts/smoke-profile.ts`, 37/37 passing against the hosted project). Hosted validation (2026-09-27): all three migrations applied to the hosted Supabase project, RLS confirmed enabled on all four tables, bucket confirmed private (`public=false`), storage policies confirmed scoped to `auth.uid()`, Edge Function deployed, and the full smoke suite green on hosted — user A happy path, user B cross-user denial (reads, inserts, update, delete, storage, signing), anonymous lockdown.
 
 Goal: replace browser-only demo state with real user data.
 

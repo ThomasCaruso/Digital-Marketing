@@ -298,6 +298,15 @@ try {
     .createSignedUrl(imagePath, 60);
   record("A can sign own path directly (Storage RLS select)", signOwnPathErr === null, signOwnPathErr?.message);
 
+  const foreign = await invokeSignedUrl(A.token, {
+    storagePath: `${userB.id}/${imageId}/front.png`,
+  });
+  record(
+    "Edge Function 403s an arbitrary foreign storagePath (prefix ownership)",
+    foreign.status === 403,
+    `status ${foreign.status}`,
+  );
+
   const missing = await invokeSignedUrl(A.token, { referenceImageId: crypto.randomUUID() });
   record(
     "Edge Function 404s a nonexistent (but well-formed) image id",
@@ -389,6 +398,35 @@ try {
     .insert({ user_id: A.userId, event_type: "view" });
   rejected("B cannot INSERT an event attributed to A (WITH CHECK)", bForgeEventErr);
 
+  const { error: bForgePrefsErr } = await bClient
+    .from("style_preferences")
+    .insert({ user_id: A.userId, dimension: "style", value: "hijacked", weight: 0.5, source: "onboarding" });
+  rejected("B cannot INSERT a style_preference attributed to A (WITH CHECK)", bForgePrefsErr);
+
+  const { error: bForgeRefErr } = await bClient
+    .from("user_reference_images")
+    .insert({
+      id: crypto.randomUUID(),
+      user_id: A.userId,
+      storage_path: referencePhotoPath(A.userId, imageId, "hijack.png"),
+      image_role: "front",
+    });
+  rejected("B cannot INSERT reference-image metadata attributed to A (WITH CHECK)", bForgeRefErr);
+
+  const { data: bUpdRows } = await bClient
+    .from("profiles")
+    .update({ display_name: "Hijacked" })
+    .eq("id", A.userId)
+    .select("id");
+  record("B cannot UPDATE A's profile (0 rows affected — row hidden by RLS)", bUpdRows?.length === 0);
+
+  const { data: bDelRows } = await bClient
+    .from("profiles")
+    .delete()
+    .eq("id", A.userId)
+    .select("id");
+  record("B cannot DELETE A's profile (0 rows affected — row hidden by RLS)", bDelRows?.length === 0);
+
   const { error: bOwnProfileErr } = await bClient
     .from("profiles")
     .insert({ id: B.userId, display_name: "Smoke B" });
@@ -400,6 +438,23 @@ try {
   const { data: anonEvents } = await anon.from("user_events").select("id");
   record("anon sees 0 profiles", anonProfiles?.length === 0);
   record("anon sees 0 user_events", anonEvents?.length === 0);
+
+  const { data: anonListed, error: anonListErr } = await anon.storage
+    .from(REFERENCE_PHOTOS_BUCKET)
+    .list(A.userId);
+  record(
+    "anon cannot LIST A's reference-photos prefix",
+    anonListErr !== null || (anonListed?.length ?? 0) === 0,
+    anonListErr?.message,
+  );
+  const { error: anonDlErr } = await anon.storage
+    .from(REFERENCE_PHOTOS_BUCKET)
+    .download(imagePath);
+  rejected("anon cannot DOWNLOAD A's photo (Storage RLS)", anonDlErr);
+  const { error: anonSignErr } = await anon.storage
+    .from(REFERENCE_PHOTOS_BUCKET)
+    .createSignedUrl(imagePath, 60);
+  rejected("anon cannot SIGN A's photo path (Storage RLS)", anonSignErr);
 } catch (err) {
   record("smoke run completed without setup failure", false, err instanceof Error ? err.message : String(err));
 } finally {

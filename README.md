@@ -14,11 +14,11 @@ The repository currently contains:
 - **Provider-independent application contracts:** `contracts/`
 - **VTON benchmark plan:** `experiments/vton-benchmark/`
 - **Safe environment-variable scaffold:** `.env.example`
-- **Phase 1 profile spine (local, verified):** `supabase/` (migrations, RLS, private storage, `signed-url` Edge Function), `src/types/` (Phase 1 contracts), `scripts/` (SQL verification + end-to-end smoke suite)
+- **Phase 1 profile spine (complete, validated on hosted Supabase):** `supabase/` (migrations, RLS, private storage, `signed-url` Edge Function), `src/types/` (Phase 1 contracts), `scripts/` (SQL verification + end-to-end smoke suite)
 
 The current website is intentionally isolated. Project scaffolding does not modify it.
 
-SQL structure and RLS are verified locally on every run (`npm run verify:sql`, real Postgres via PGlite — no Docker needed). The hosted Supabase project and a live smoke run are still pending.
+SQL structure and RLS are verified locally on every run (`npm run verify:sql`, real Postgres via PGlite — no Docker needed). Phase 1 is also validated on the hosted Supabase project: migrations applied, private bucket confirmed, `signed-url` Edge Function deployed, and the hosted smoke suite passes end to end (`npm run smoke`, 37/37).
 
 Live concept:
 https://thomascaruso.github.io/Digital-Marketing/
@@ -97,12 +97,11 @@ Start here:
 
 The next engineering sequence is:
 
-1. Create the hosted Supabase project; apply the migrations; run `npm run smoke` against it (locally this requires Docker: `supabase start`).
-2. First real `ProductProvider`.
-3. Strict GLM intent/ranking schemas.
-4. Hosted FASHN integration for the first real try-on.
-5. Self-hosted VTON benchmark.
-6. Preference-learning loop.
-7. Local color/edit pipeline.
+1. First real `ProductProvider`.
+2. Strict GLM intent/ranking schemas.
+3. Hosted FASHN integration for the first real try-on.
+4. Self-hosted VTON benchmark.
+5. Preference-learning loop.
+6. Local color/edit pipeline.
 
 See [ROADMAP.md](docs/ROADMAP.md) for the full sequence.
