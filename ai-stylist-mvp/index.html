@@ -1,400 +1,392 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f4f1eb" />
-  <meta name="description" content="FORM is an AI personal stylist that learns your body, taste, budget and life." />
-  <title>FORM — AI Personal Stylist</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="FORM — a personal stylist that learns your fit, taste, and budget, then builds complete looks for real occasions. Interactive demo.">
+  <title>FORM — A stylist that knows you</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <noscript><p style="padding:24px">FORM is an interactive demo and needs JavaScript enabled.</p></noscript>
+
+  <!-- ============================================================
+       COVER — quiet editorial entry
+  ============================================================ -->
+  <section id="coverView" class="cover is-active" aria-label="FORM introduction">
+    <header class="cover-top">
+      <span class="wordmark">FORM</span>
+      <span class="demo-pill">Demo preview</span>
+    </header>
+    <div class="cover-body">
+      <p class="eyebrow">Personal styling, quietly done</p>
+      <h1 class="cover-title">A stylist that<br><em>actually knows you.</em></h1>
+      <p class="cover-copy">
+        FORM learns your proportions, your taste, and your budget — then builds
+        complete looks for real occasions, from pieces you can actually buy.
+      </p>
+      <div class="cover-actions">
+        <button class="btn btn-dark" data-action="onboard">Build my FORM</button>
+        <button class="btn btn-ghost" data-action="demo">Explore the demo</button>
+      </div>
+      <ul class="cover-points">
+        <li><b>Learns your fit</b><span>Height, sizes, and photos — not guesswork</span></li>
+        <li><b>Occasion first</b><span>Tell it the moment, get three directions</span></li>
+        <li><b>Real pieces</b><span>Complete looks with honest totals</span></li>
+      </ul>
+    </div>
+    <footer class="cover-foot">Demo experience — no accounts, nothing is purchased.</footer>
+  </section>
+
+  <!-- ============================================================
+       APP SHELL
+  ============================================================ -->
+  <div id="appView" class="app" aria-hidden="true">
+
+    <aside class="sidebar">
+      <button class="wordmark as-button" data-route="cover" aria-label="Back to cover">FORM</button>
+      <nav class="side-nav" aria-label="Main">
+        <button class="side-link nav-link active" data-tab="home">Home</button>
+        <button class="side-link nav-link" data-tab="saved">Saved</button>
+        <button class="side-link nav-link" data-tab="profile">Your FORM</button>
+      </nav>
+      <div class="side-foot">
+        <span class="demo-pill">Demo preview</span>
+        <button id="profileShortcut" class="user-chip">
+          <span class="user-initial" id="userInitial">T</span>
+          <span id="sidebarName">Thomas</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <header class="mobile-top">
+        <button class="wordmark as-button" data-route="cover" aria-label="Back to cover">FORM</button>
+        <span class="demo-pill">Demo</span>
+      </header>
+
+      <!-- HOME -->
+      <section class="tab-panel active" data-panel="home" aria-label="Home">
+        <div class="hero">
+          <p class="eyebrow" id="greetingLine">Good evening, Thomas</p>
+          <h2 class="hero-title">What are you dressing&nbsp;for?</h2>
+          <div class="prompt-box">
+            <textarea id="occasionInput" rows="3"
+              placeholder="Dinner in SoHo Saturday. 55°F. I want to look expensive but not overdressed. Under $350."
+              aria-label="Describe the occasion"></textarea>
+            <div class="prompt-foot">
+              <span class="prompt-hint">Describe the moment — FORM handles the rest.</span>
+              <button id="buildLooks" class="btn btn-dark">Style me</button>
+            </div>
+          </div>
+          <div class="chip-row" id="chipRow" aria-label="Common occasions">
+            <button data-prompt="Date night. Elevated but relaxed — a good restaurant, no jacket required. Under $250.">Date night</button>
+            <button data-prompt="A normal workday. Smart, quiet, comfortable. Nothing flashy.">Work</button>
+            <button data-prompt="Going out with friends. Darker palette, easy shoes, has to stay sharp late.">Going out</button>
+            <button data-prompt="Fall wedding guest. Semi-formal, warm tones. Under $500.">Wedding</button>
+            <button data-prompt="Dinner in SoHo Saturday. 55°F. I want to look expensive but not overdressed. Under $350.">Dinner</button>
+            <button data-prompt="A long weekend somewhere warm. Light layers, easy fit, everything works together.">Vacation</button>
+            <button data-prompt="Everyday rotation. Clean basics that work on repeat.">Everyday</button>
+            <button data-prompt="Job interview. Polished and modern, not corporate-stiff. Under $400.">Interview</button>
+          </div>
+        </div>
+
+        <section class="home-section">
+          <div class="section-head">
+            <h3>Recently styled</h3>
+          </div>
+          <div id="recentGrid" class="mini-grid"></div>
+          <p id="recentEmpty" class="quiet-note show">Nothing yet. The looks FORM builds for you will live here.</p>
+        </section>
+
+        <section class="home-section">
+          <div class="section-head">
+            <h3>Saved looks</h3>
+            <button class="text-link nav-link" data-tab="saved">View all</button>
+          </div>
+          <div id="savedStrip" class="mini-grid"></div>
+          <p id="savedStripEmpty" class="quiet-note show">Save a look and it will appear here.</p>
+        </section>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="tab-panel" data-panel="results" aria-label="Styled results">
+        <div class="results-head">
+          <button class="text-link nav-link" data-tab="home">&larr; New request</button>
+          <p class="eyebrow">Styled for</p>
+          <h2 class="hero-title small" id="resultsTitle">Your occasion</h2>
+          <p class="results-sub">Three directions, filtered for your fit, taste, and budget.</p>
+        </div>
+        <div id="looksGrid" class="looks-grid"></div>
+      </section>
+
+      <!-- SAVED -->
+      <section class="tab-panel" data-panel="saved" aria-label="Saved looks">
+        <div class="results-head">
+          <p class="eyebrow">Your wardrobe board</p>
+          <h2 class="hero-title small">Saved looks</h2>
+          <p class="results-sub">Everything you've kept, in one place.</p>
+        </div>
+        <div id="savedGrid" class="looks-grid"></div>
+        <div id="savedEmpty" class="empty-state show">
+          <h4>Nothing saved yet</h4>
+          <p>When a look lands, keep it here. Your board becomes the record of what works on you.</p>
+          <button class="btn btn-ghost nav-link" data-tab="home">Style something</button>
+        </div>
+      </section>
+
+      <!-- YOUR FORM -->
+      <section class="tab-panel" data-panel="profile" aria-label="Your FORM">
+        <div class="results-head">
+          <p class="eyebrow">Your FORM</p>
+          <h2 class="hero-title small">What FORM knows about you</h2>
+          <p class="results-sub">The model behind every recommendation. Everything here stays on this device.</p>
+        </div>
+        <div class="profile-grid">
+          <article class="profile-card">
+            <h4>Style DNA</h4>
+            <div id="profileStyles" class="chip-stack"></div>
+            <p id="styleLine" class="profile-line">Lean, neutral, quietly structured.</p>
+          </article>
+          <article class="profile-card">
+            <h4>Shopping</h4>
+            <dl class="fact-list">
+              <div><dt>Comfort zone</dt><dd id="prefBudget">$300</dd></div>
+              <div><dt>Priority</dt><dd id="prefPriority">Best overall look</dd></div>
+            </dl>
+            <div id="brandList" class="chip-stack small"></div>
+          </article>
+          <article class="profile-card">
+            <h4>Sizing</h4>
+            <dl id="fitList" class="fact-list"></dl>
+          </article>
+          <article class="profile-card">
+            <h4>Reference photos</h4>
+            <div id="photoWall" class="photo-wall"></div>
+            <p class="profile-note">Photos stay on your device in this demo — they shape fit, never leave it.</p>
+          </article>
+          <article class="profile-card wide">
+            <h4>What FORM has learned <span class="demo-pill tiny">Demo signals</span></h4>
+            <dl id="learnedList" class="fact-list"></dl>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main">
+      <button class="bottom-link nav-link active" data-tab="home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="bottom-link nav-link" data-tab="saved">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
+        <span>Saved</span>
+      </button>
+      <button class="bottom-link nav-link" data-tab="profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+        <span>Your FORM</span>
+      </button>
+    </nav>
+
+    <!-- LOADING -->
+    <div id="loadingOverlay" class="loading" aria-hidden="true" role="status">
+      <p class="eyebrow">Building your looks</p>
+      <h3 class="loading-title" id="loadingLine">Considering your style</h3>
+      <div class="loading-bar"><span id="loadingBarFill"></span></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ONBOARDING
+  ============================================================ -->
+  <div id="onboarding" class="onboarding" aria-hidden="true" role="dialog" aria-label="Set up your FORM">
+    <div class="onboard-frame">
+      <header class="onboard-head">
+        <span class="wordmark">FORM</span>
+        <span class="onboard-count" id="progressLabel">01 / 04</span>
+        <button class="icon-btn" data-close-onboarding aria-label="Close setup">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div class="onboard-progress"><span id="progressBar"></span></div>
+
+      <div class="onboard-steps">
+        <section class="onboarding-step active" data-step="1">
+          <h2>Let&rsquo;s build your FORM.</h2>
+          <p class="step-sub">Three quick photos teach FORM your proportions. In this demo they never leave your device.</p>
+          <div class="upload-row">
+            <label class="upload-slot">
+              <input type="file" accept="image/*" id="photoFront">
+              <img alt="" class="slot-img">
+              <span class="slot-plus" aria-hidden="true">+</span>
+              <span class="slot-label">Front</span>
+            </label>
+            <label class="upload-slot">
+              <input type="file" accept="image/*" id="photoSide">
+              <img alt="" class="slot-img">
+              <span class="slot-plus" aria-hidden="true">+</span>
+              <span class="slot-label">Side</span>
+            </label>
+            <label class="upload-slot">
+              <input type="file" accept="image/*" id="photoNatural">
+              <img alt="" class="slot-img">
+              <span class="slot-plus" aria-hidden="true">+</span>
+              <span class="slot-label">Natural light</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="onboarding-step" data-step="2">
+          <h2>What&rsquo;s your style?</h2>
+          <p class="step-sub">Pick two or three. FORM uses these to set direction — not rules.</p>
+          <div id="stylePicker" class="style-picker">
+            <button data-style="Minimal"><b>Minimal</b><span>Clean lines, quiet color</span></button>
+            <button data-style="Elevated casual"><b>Elevated casual</b><span>Polished, never stiff</span></button>
+            <button data-style="Classic"><b>Classic</b><span>Timeless over trendy</span></button>
+            <button data-style="Streetwear"><b>Streetwear</b><span>Relaxed, current</span></button>
+            <button data-style="Formal"><b>Formal</b><span>Sharp tailoring</span></button>
+            <button data-style="Rugged"><b>Rugged</b><span>Workwear bones</span></button>
+            <button data-style="Playful"><b>Playful</b><span>Color, pattern, fun</span></button>
+            <button data-style="Bold"><b>Bold</b><span>Makes an entrance</span></button>
+          </div>
+        </section>
+
+        <section class="onboarding-step" data-step="3">
+          <h2>How do you usually fit?</h2>
+          <p class="step-sub">Sizes stay on your device. FORM uses them to judge proportion and length.</p>
+          <div class="form-grid">
+            <label class="field span-2"><span>Name</span><input id="nameInput" type="text" value="Thomas" autocomplete="name"></label>
+            <label class="field"><span>Height</span><input id="heightInput" type="text" value='6&#39;0"' inputmode="text"></label>
+            <label class="field"><span>Top size</span>
+              <select id="topSize">
+                <option>XS</option><option>S</option><option selected>M</option>
+                <option>L</option><option>XL</option><option>XXL</option>
+              </select>
+            </label>
+            <label class="field"><span>Waist</span>
+              <select id="waistSize">
+                <option>28</option><option>29</option><option selected>30</option>
+                <option>31</option><option>32</option><option>34</option><option>36</option>
+              </select>
+            </label>
+            <label class="field"><span>Inseam</span>
+              <select id="inseamSize">
+                <option>30</option><option selected>32</option><option>34</option>
+              </select>
+            </label>
+            <label class="field"><span>Shoe</span>
+              <select id="shoeSize">
+                <option>8</option><option>9</option><option selected>10</option>
+                <option>11</option><option>12</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="onboarding-step" data-step="4">
+          <h2>How do you usually shop?</h2>
+          <p class="step-sub">FORM balances price against the occasion. You approve every piece.</p>
+          <div class="budget-row">
+            <span class="field-label">Comfort zone per look</span>
+            <output id="budgetValue">$300</output>
+            <input id="budgetRange" type="range" min="100" max="600" step="25" value="300" aria-label="Budget per look">
+          </div>
+          <div id="priorityPicker" class="stack-picker">
+            <button data-priority="Value first"><b>Value first</b><span>Lowest price that still looks right</span></button>
+            <button data-priority="Balanced"><b>Balanced</b><span>A mix of price and quality</span></button>
+            <button data-priority="Best overall look" class="selected"><b>Best overall look</b><span>Spend where it shows</span></button>
+          </div>
+          <label class="field"><span>Brands you love <em>(optional)</em></span>
+            <input id="brandInput" type="text" placeholder="COS, Uniqlo, New Balance…">
+          </label>
+        </section>
+      </div>
+
+      <footer class="onboard-foot">
+        <button id="onboardBack" class="btn btn-ghost">Back</button>
+        <button id="onboardNext" class="btn btn-dark">Continue &rarr;</button>
+      </footer>
+    </div>
+    <div id="onboardDone" class="onboard-done" aria-hidden="true">
+      <p class="eyebrow">All set</p>
+      <h2>Your FORM is ready.</h2>
+      <p class="step-sub">Three looks, built around you.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LOOK DETAIL
+  ============================================================ -->
+  <div id="lookModal" class="modal" aria-hidden="true" role="dialog" aria-label="Look detail">
+    <div class="modal-scrim" data-close-look></div>
+    <div class="modal-card">
+      <button class="icon-btn modal-close" id="closeLook" aria-label="Close look">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+
+      <div class="modal-visual">
+        <div id="lookScene" class="look-scene">
+          <div id="modalAvatar" class="avatar"></div>
+          <div id="tryonShimmer" class="tryon-shimmer"><span>Preparing your preview&hellip;</span></div>
+          <span class="tryon-tag" hidden>Try-on preview &middot; simulated</span>
+        </div>
+        <div class="visual-toolbar">
+          <div id="viewToggle" class="seg" hidden>
+            <button data-view="original" class="active">Original</button>
+            <button data-view="tryon">Try-on</button>
+          </div>
+          <span class="visual-caption" id="visualCaption"></span>
+        </div>
+      </div>
+
+      <div class="modal-info">
+        <p class="eyebrow" id="modalEyebrow">Look 01</p>
+        <h3 class="modal-title" id="modalTitle">Quiet confidence</h3>
+        <p class="modal-desc" id="modalDescription"></p>
+        <div class="why-block">
+          <h4>Why FORM chose this</h4>
+          <p id="modalWhy"></p>
+        </div>
+        <div id="productList" class="product-list"></div>
+        <div class="total-row"><span>Total</span><b id="modalTotal">$286</b></div>
+        <div class="modal-actions">
+          <button id="modalSave" class="btn btn-dark">Save look</button>
+          <button id="tryOnButton" class="btn btn-ghost">See it on me</button>
+          <button id="dismissLook" class="text-link">Not quite right</button>
+        </div>
+        <div class="tryon-actions" id="tryonActions" hidden>
+          <button class="text-link" id="tryAnother">Try another look</button>
+          <button class="text-link" id="changeItem">Change an item</button>
+        </div>
+        <p class="demo-note">Demo catalog — pieces are illustrative, nothing is for sale here.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SWAP DRAWER
+  ============================================================ -->
+  <div id="swapDrawer" class="drawer" aria-hidden="true" role="dialog" aria-label="Swap an item">
+    <div class="drawer-scrim" data-close-swap></div>
+    <div class="drawer-sheet">
+      <header class="drawer-head">
+        <div>
+          <h4 id="swapTitle">Swap your knit</h4>
+          <p class="drawer-sub">Priced and styled for this look.</p>
+        </div>
+        <button class="icon-btn" data-close-swap aria-label="Close swap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div id="swapList" class="swap-list"></div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <header class="site-header" id="siteHeader">
-    <a class="wordmark" href="#" data-route="landing" aria-label="FORM home">FORM</a>
-    <nav class="header-nav" aria-label="Primary">
-      <button class="nav-link" data-scroll="#how">How it works</button>
-      <button class="nav-link" data-scroll="#product">Product</button>
-      <button class="nav-link" data-action="demo">Open demo</button>
-    </nav>
-    <button class="header-cta" data-action="onboard">Build my profile</button>
-  </header>
-
-  <main>
-    <section id="landingView" class="view is-active">
-      <section class="hero">
-        <div class="hero-copy">
-          <div class="eyebrow"><span class="eyebrow-dot"></span> Personal style, modeled around you</div>
-          <h1>A stylist that<br /><em>actually knows you.</em></h1>
-          <p class="hero-sub">
-            Build your profile once. FORM learns your body, taste, budget and life — then finds real clothes and shows you the full look before you buy.
-          </p>
-          <div class="hero-actions">
-            <button class="btn btn-dark" data-action="onboard">Build my profile <span>↗</span></button>
-            <button class="btn btn-ghost" data-action="demo">Explore the demo</button>
-          </div>
-          <div class="hero-proof">
-            <span>Real products</span><i></i><span>Personalized sizing</span><i></i><span>Visual try-on</span>
-          </div>
-        </div>
-
-        <div class="hero-stage" aria-label="Product preview">
-          <div class="stage-orbit orbit-one"></div>
-          <div class="stage-orbit orbit-two"></div>
-
-          <article class="floating-card card-left">
-            <div class="mini-label">TONIGHT</div>
-            <div class="mini-title">Dinner in SoHo</div>
-            <div class="mini-meta">58°F · Elevated casual</div>
-            <div class="mini-products">
-              <span style="--swatch:#1d1d1b"></span>
-              <span style="--swatch:#dbd6cc"></span>
-              <span style="--swatch:#f2f0eb"></span>
-            </div>
-          </article>
-
-          <div class="phone-shell">
-            <div class="phone-topbar"><span>9:41</span><span class="phone-pill"></span><span>●●●</span></div>
-            <div class="phone-brand">FORM</div>
-            <div class="phone-copy">
-              <span class="tiny-kicker">LOOK 01 · 96% MATCH</span>
-              <h3>Understated,<br />not invisible.</h3>
-              <p>Built for dinner, then drinks.</p>
-            </div>
-            <div class="model-card">
-              <div class="model-scene"></div>
-              <div class="avatar">
-                <div class="avatar-head"></div>
-                <div class="avatar-neck"></div>
-                <div class="avatar-top" style="--garment:#1f2328"></div>
-                <div class="avatar-pants"></div>
-                <div class="avatar-shoe shoe-left"></div>
-                <div class="avatar-shoe shoe-right"></div>
-              </div>
-              <span class="scene-tag">SOHO · 8:30 PM</span>
-            </div>
-            <div class="phone-price-row"><span>3 pieces</span><strong>$286</strong></div>
-            <button class="phone-button">See it on me</button>
-          </div>
-
-          <article class="floating-card card-right">
-            <div class="match-ring"><span>96</span><small>%</small></div>
-            <div>
-              <div class="mini-label">STYLE MATCH</div>
-              <div class="mini-meta">Based on 42 preferences</div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="marquee" aria-label="Brand positioning">
-        <div class="marquee-track">
-          <span>YOUR BODY</span><i>◆</i><span>YOUR TASTE</span><i>◆</i><span>YOUR BUDGET</span><i>◆</i><span>YOUR LIFE</span><i>◆</i>
-          <span>YOUR BODY</span><i>◆</i><span>YOUR TASTE</span><i>◆</i><span>YOUR BUDGET</span><i>◆</i><span>YOUR LIFE</span><i>◆</i>
-        </div>
-      </section>
-
-      <section id="how" class="section how-section">
-        <div class="section-heading">
-          <span class="eyebrow">THE LOOP</span>
-          <h2>Less searching.<br /><em>Better getting dressed.</em></h2>
-        </div>
-        <div class="steps-grid">
-          <article class="step-card">
-            <span class="step-num">01</span>
-            <div class="step-visual profile-visual">
-              <div class="profile-silhouette"></div>
-              <div class="scan-line"></div>
-              <span>BODY + FIT</span>
-            </div>
-            <h3>Build your model</h3>
-            <p>A few photos, your usual sizes and the way you actually like clothes to fit.</p>
-          </article>
-          <article class="step-card">
-            <span class="step-num">02</span>
-            <div class="step-visual taste-visual">
-              <span class="taste-pill active">Minimal</span>
-              <span class="taste-pill">Elevated casual</span>
-              <span class="taste-pill">Classic</span>
-              <span class="taste-pill">Streetwear</span>
-            </div>
-            <h3>Teach it your taste</h3>
-            <p>Like, dislike and save. FORM builds a persistent preference model instead of starting over.</p>
-          </article>
-          <article class="step-card">
-            <span class="step-num">03</span>
-            <div class="step-visual shop-visual">
-              <div class="shop-card"><span></span><b>$89</b></div>
-              <div class="shop-card"><span></span><b>$110</b></div>
-              <div class="shop-card"><span></span><b>$98</b></div>
-            </div>
-            <h3>Shop complete looks</h3>
-            <p>Tell FORM the occasion. It assembles real purchasable pieces and keeps the total inside your budget.</p>
-          </article>
-        </div>
-      </section>
-
-      <section id="product" class="section product-section">
-        <div class="product-copy">
-          <span class="eyebrow">A PERSONAL APPEARANCE MODEL</span>
-          <h2>It should know what you mean by <em>“make it more me.”</em></h2>
-          <p>
-            FORM remembers the cuts you keep, the colors you skip, the brands that fit, the things already in your closet and the outfits you actually wear.
-          </p>
-          <button class="text-link" data-action="onboard">Create your profile <span>→</span></button>
-        </div>
-        <div class="memory-stack">
-          <article>
-            <span class="memory-icon">01</span>
-            <div><b>Fit memory</b><p>Prefers relaxed outerwear, cleaner trouser lines.</p></div>
-          </article>
-          <article>
-            <span class="memory-icon">02</span>
-            <div><b>Taste memory</b><p>Neutral base, one deliberate statement piece.</p></div>
-          </article>
-          <article>
-            <span class="memory-icon">03</span>
-            <div><b>Context memory</b><p>Different recommendations for class, dates, travel and work.</p></div>
-          </article>
-          <article>
-            <span class="memory-icon">04</span>
-            <div><b>Commerce memory</b><p>Learns from purchases, saves, skips and returns.</p></div>
-          </article>
-        </div>
-      </section>
-
-      <section class="cta-section">
-        <div>
-          <span class="eyebrow">EARLY PRODUCT DEMO</span>
-          <h2>Stop scrolling through clothes.<br /><em>Start with the look.</em></h2>
-        </div>
-        <button class="btn btn-light" data-action="onboard">Build my profile <span>↗</span></button>
-      </section>
-    </section>
-
-    <section id="appView" class="view app-view">
-      <div class="app-shell">
-        <aside class="app-sidebar">
-          <button class="sidebar-wordmark" data-route="landing">FORM</button>
-          <div class="user-chip">
-            <div class="user-avatar">TC</div>
-            <div><b id="sidebarName">Your profile</b><span>Style model active</span></div>
-          </div>
-          <nav class="side-nav">
-            <button class="side-link active" data-tab="home"><span>⌂</span> Home</button>
-            <button class="side-link" data-tab="saved"><span>♡</span> Saved</button>
-            <button class="side-link" data-tab="profile"><span>◎</span> Profile</button>
-          </nav>
-          <div class="sidebar-meter">
-            <div><span>Style model</span><b>72%</b></div>
-            <div class="meter"><i></i></div>
-            <p>Rate looks to sharpen your recommendations.</p>
-          </div>
-          <button class="back-to-site" data-route="landing">← Back to site</button>
-        </aside>
-
-        <div class="app-content">
-          <section class="tab-panel active" data-panel="home">
-            <div class="app-topline">
-              <div><span class="eyebrow">GOOD MORNING</span><h2>What are you dressing for?</h2></div>
-              <button class="icon-button" id="profileShortcut" aria-label="Open profile">TC</button>
-            </div>
-
-            <div class="composer">
-              <textarea id="occasionInput" rows="2" placeholder="Dinner in NYC. Elevated but understated. $300 max."></textarea>
-              <div class="composer-bottom">
-                <div class="suggestion-row">
-                  <button data-prompt="Dinner tonight">Dinner tonight</button>
-                  <button data-prompt="Going out">Going out</button>
-                  <button data-prompt="Date">Date</button>
-                  <button data-prompt="Interview">Interview</button>
-                  <button data-prompt="Weekend">Weekend</button>
-                  <button data-prompt="Travel">Travel</button>
-                </div>
-                <button class="build-button" id="buildLooks">Build my looks <span>↗</span></button>
-              </div>
-            </div>
-
-            <div class="recommendation-head">
-              <div><span class="eyebrow">FOR YOU</span><h3 id="recommendationTitle">Three looks, already filtered.</h3></div>
-              <span class="recommendation-note">Demo catalog · live commerce next</span>
-            </div>
-
-            <div id="looksGrid" class="looks-grid"></div>
-          </section>
-
-          <section class="tab-panel" data-panel="saved">
-            <div class="app-topline compact">
-              <div><span class="eyebrow">YOUR EDIT</span><h2>Saved looks</h2></div>
-            </div>
-            <div id="savedGrid" class="looks-grid"></div>
-            <div id="savedEmpty" class="empty-state">
-              <span>♡</span>
-              <h3>Nothing saved yet.</h3>
-              <p>Save a look and it will live here while FORM learns your taste.</p>
-              <button class="btn btn-dark" data-tab-jump="home">Find a look</button>
-            </div>
-          </section>
-
-          <section class="tab-panel" data-panel="profile">
-            <div class="app-topline compact">
-              <div><span class="eyebrow">YOUR MODEL</span><h2>Personal profile</h2></div>
-              <button class="btn btn-ghost small" data-action="onboard">Edit profile</button>
-            </div>
-            <div class="profile-layout">
-              <article class="profile-card identity-card">
-                <div class="identity-preview">
-                  <div class="avatar avatar-profile">
-                    <div class="avatar-head"></div><div class="avatar-neck"></div>
-                    <div class="avatar-top" style="--garment:#d8d2c7"></div><div class="avatar-pants"></div>
-                    <div class="avatar-shoe shoe-left"></div><div class="avatar-shoe shoe-right"></div>
-                  </div>
-                </div>
-                <div>
-                  <span class="eyebrow">DIGITAL TWIN</span>
-                  <h3 id="profileName">Your style model</h3>
-                  <p>Identity references stored locally in this demo. Production will use private object storage.</p>
-                </div>
-              </article>
-              <article class="profile-card">
-                <span class="eyebrow">STYLE DNA</span>
-                <div id="profileStyles" class="profile-tags"></div>
-              </article>
-              <article class="profile-card">
-                <span class="eyebrow">FIT</span>
-                <dl id="fitList" class="fit-list"></dl>
-              </article>
-              <article class="profile-card">
-                <span class="eyebrow">LEARNING SIGNALS</span>
-                <div class="signal-row"><span>Saved looks</span><b id="savedCount">0</b></div>
-                <div class="signal-row"><span>Rated looks</span><b id="ratedCount">0</b></div>
-                <div class="signal-row"><span>Model confidence</span><b>72%</b></div>
-              </article>
-            </div>
-          </section>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <div id="onboarding" class="overlay onboarding-overlay" aria-hidden="true">
-    <div class="onboarding-shell">
-      <div class="onboarding-header">
-        <button class="wordmark" data-close-onboarding>FORM</button>
-        <div class="progress-wrap"><span id="progressLabel">01 / 04</span><div class="progress-bar"><i id="progressBar"></i></div></div>
-        <button class="close-button" data-close-onboarding aria-label="Close onboarding">×</button>
-      </div>
-
-      <div class="onboarding-step active" data-step="1">
-        <div class="step-copy">
-          <span class="eyebrow">YOUR REFERENCES</span>
-          <h2>First, show FORM <em>you.</em></h2>
-          <p>Two to four clear photos help keep your face, proportions and general build consistent across try-ons.</p>
-          <div class="privacy-note"><span>◉</span><p><b>V1 demo:</b> photos stay in this browser session and are never uploaded.</p></div>
-        </div>
-        <div class="upload-grid">
-          <label class="upload-slot" for="photoFront"><input id="photoFront" type="file" accept="image/*" /><span class="upload-icon">＋</span><b>Front</b><small>Full body preferred</small><img alt="" /></label>
-          <label class="upload-slot" for="photoSide"><input id="photoSide" type="file" accept="image/*" /><span class="upload-icon">＋</span><b>Side / ¾</b><small>Natural posture</small><img alt="" /></label>
-          <label class="upload-slot optional" for="photoNatural"><input id="photoNatural" type="file" accept="image/*" /><span class="upload-icon">＋</span><b>Natural</b><small>Optional</small><img alt="" /></label>
-        </div>
-      </div>
-
-      <div class="onboarding-step" data-step="2">
-        <div class="step-copy">
-          <span class="eyebrow">STYLE DNA</span>
-          <h2>What already feels <em>like you?</em></h2>
-          <p>Choose as many as you want. These are starting weights, not permanent labels.</p>
-        </div>
-        <div class="style-picker" id="stylePicker">
-          <button data-style="Minimal">Minimal<span>Clean lines · neutral</span></button>
-          <button data-style="Elevated casual">Elevated casual<span>Relaxed · intentional</span></button>
-          <button data-style="Classic">Classic<span>Timeless · tailored</span></button>
-          <button data-style="Streetwear">Streetwear<span>Volume · culture</span></button>
-          <button data-style="Preppy">Preppy<span>Polished · collegiate</span></button>
-          <button data-style="Sporty">Sporty<span>Technical · easy</span></button>
-          <button data-style="Vintage">Vintage<span>Texture · character</span></button>
-          <button data-style="Experimental">Experimental<span>Unexpected · directional</span></button>
-        </div>
-      </div>
-
-      <div class="onboarding-step" data-step="3">
-        <div class="step-copy">
-          <span class="eyebrow">FIT PROFILE</span>
-          <h2>Give us the basics.<br /><em>We learn the rest.</em></h2>
-          <p>No tape measure required for V1. Start with the sizes you already buy.</p>
-        </div>
-        <div class="form-grid">
-          <label>Name<input id="nameInput" placeholder="Thomas" autocomplete="given-name" /></label>
-          <label>Height<input id="heightInput" placeholder="6'0&quot;" /></label>
-          <label>Usual top size<select id="topSize"><option>S</option><option selected>M</option><option>L</option><option>XL</option></select></label>
-          <label>Waist<select id="waistSize"><option>28</option><option>29</option><option>30</option><option selected>31</option><option>32</option><option>33</option><option>34</option><option>36</option></select></label>
-          <label>Inseam<select id="inseamSize"><option>30</option><option selected>32</option><option>34</option><option>36</option></select></label>
-          <label>Shoe size<select id="shoeSize"><option>8</option><option>8.5</option><option>9</option><option>9.5</option><option selected>10</option><option>10.5</option><option>11</option><option>12</option></select></label>
-        </div>
-      </div>
-
-      <div class="onboarding-step" data-step="4">
-        <div class="step-copy">
-          <span class="eyebrow">BUDGET + INTENT</span>
-          <h2>How should FORM <em>shop?</em></h2>
-          <p>Set a normal range. You can always override it for a specific occasion.</p>
-        </div>
-        <div class="budget-card">
-          <div class="budget-top"><span>Typical complete-look budget</span><b id="budgetValue">$300</b></div>
-          <input id="budgetRange" type="range" min="100" max="1000" step="50" value="300" />
-          <div class="budget-scale"><span>$100</span><span>$1,000+</span></div>
-        </div>
-        <div class="priority-picker" id="priorityPicker">
-          <button class="selected" data-priority="Best overall look">Best overall look<span>Balance style, fit and price</span></button>
-          <button data-priority="Value">Value<span>Stretch the budget further</span></button>
-          <button data-priority="Premium">Premium<span>Fewer, better pieces</span></button>
-        </div>
-      </div>
-
-      <div class="onboarding-footer">
-        <button class="btn btn-ghost" id="onboardBack">Back</button>
-        <button class="btn btn-dark" id="onboardNext">Continue <span>→</span></button>
-      </div>
-    </div>
-  </div>
-
-  <div id="lookModal" class="overlay look-overlay" aria-hidden="true">
-    <div class="look-modal">
-      <button class="close-button modal-close" id="closeLook" aria-label="Close look">×</button>
-      <div class="look-visual-panel">
-        <div class="look-scene" id="lookScene">
-          <div class="scene-caption">AI VISUAL PREVIEW · DEMO</div>
-          <div class="avatar avatar-large">
-            <div class="avatar-head"></div><div class="avatar-neck"></div>
-            <div class="avatar-top" id="modalTop" style="--garment:#22262b"></div>
-            <div class="avatar-pants" id="modalPants"></div>
-            <div class="avatar-shoe shoe-left"></div><div class="avatar-shoe shoe-right"></div>
-          </div>
-          <div class="tryon-shimmer" id="tryonShimmer"></div>
-          <span class="scene-tag">CITY · EVENING</span>
-        </div>
-        <div class="color-editor">
-          <div><span class="eyebrow">INSTANT COLORWAY</span><p>No regeneration required</p></div>
-          <div id="colorSwatches" class="color-swatches"></div>
-        </div>
-      </div>
-      <div class="look-info-panel">
-        <div class="look-modal-head">
-          <div><span class="eyebrow" id="modalMatch">96% MATCH</span><h2 id="modalTitle">Look title</h2><p id="modalDescription"></p></div>
-          <button class="save-circle" id="modalSave" aria-label="Save look">♡</button>
-        </div>
-        <div class="price-summary"><span>Complete look</span><b id="modalTotal">$0</b></div>
-        <div id="productList" class="product-list"></div>
-        <button class="btn btn-dark full" id="tryOnButton">See it on me <span>↗</span></button>
-        <p class="demo-disclaimer">V1 uses demo product records and a simulated try-on state. Production will connect a product provider and image-generation API.</p>
-      </div>
-    </div>
-  </div>
-
-  <script src="./app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
