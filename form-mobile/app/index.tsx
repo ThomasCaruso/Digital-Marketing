@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '../src/components/AppButton';
-import { colors, radius } from '../src/theme/tokens';
+import { colors } from '../src/theme/tokens';
 import { eyebrow, family } from '../src/theme/typography';
 
 /** Quiet editorial entry — the demo cover, native. */
@@ -17,9 +17,7 @@ export default function CoverScreen() {
       <StatusBar style="dark" />
       <View style={styles.topRow}>
         <Text style={styles.wordmark}>FORM</Text>
-        <View style={styles.pill}>
-          <Text style={styles.pillText}>Demo preview</Text>
-        </View>
+        <Text style={styles.previewNote}>Demo preview</Text>
       </View>
 
       <Animated.View
@@ -63,14 +61,7 @@ const styles = StyleSheet.create({
     letterSpacing: 5,
     color: colors.ink,
   },
-  pill: {
-    borderWidth: 1,
-    borderColor: colors.line2,
-    borderRadius: radius.pill,
-    paddingVertical: 5,
-    paddingHorizontal: 11,
-  },
-  pillText: {
+  previewNote: {
     fontFamily: family.sansSemiBold,
     fontSize: 10.5,
     letterSpacing: 1.5,

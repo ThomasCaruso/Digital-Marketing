@@ -5,13 +5,17 @@ import { family } from '../theme/typography';
 interface AppButtonProps {
   label: string;
   onPress: () => void;
+  /** dark = solid ink conviction; ghost = quiet type-only action. */
   variant?: 'dark' | 'ghost';
   small?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
 }
 
-/** The web demo's .btn / .btn-dark / .btn-ghost, native-shaped. */
+/**
+ * The demo's button pair, tuned down: pill radius, medium-weight label, and a
+ * ghost variant that is plain type — no outlined bubble.
+ */
 export function AppButton({ label, onPress, variant = 'dark', small, disabled, style }: AppButtonProps) {
   return (
     <Pressable
@@ -46,40 +50,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 13,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingHorizontal: 26,
+    borderRadius: 999,
   },
   small: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
   },
   dark: {
     backgroundColor: colors.accent,
   },
   ghost: {
-    borderWidth: 1,
-    borderColor: colors.line2,
     backgroundColor: 'transparent',
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 0.5,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.72,
   },
   label: {
-    fontFamily: family.sansSemiBold,
-    fontSize: 15,
+    fontFamily: family.sansMedium,
+    fontSize: 14.5,
     color: colors.ink,
   },
   labelSmall: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   labelDark: {
     color: colors.onAccent,
   },
   labelGhost: {
-    color: colors.ink,
+    color: colors.ink2,
   },
 });

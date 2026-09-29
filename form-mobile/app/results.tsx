@@ -29,19 +29,21 @@ export default function ResultsScreen() {
     if (!look) return;
     const nowSaved = toggleSaved(look, occasion);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    showToast(nowSaved ? 'Saved — added to your board' : 'Removed from Saved');
+    showToast(nowSaved ? 'Kept to your board' : 'Removed from your board');
   };
 
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}>
         <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
-          <Text style={styles.backLink}>← New request</Text>
+          <Text style={styles.backLink}>← New brief</Text>
         </Pressable>
         <Text style={[eyebrow, styles.eyebrowGap]}>Styled for</Text>
         <Text style={styles.title}>“{session.occasion}”</Text>
-        <Text style={styles.sub}>Three directions, filtered for your fit, taste, and budget.</Text>
+        <Text style={styles.sub}>
+          Three directions, filtered for your fit, taste, and budget.
+        </Text>
 
         <View style={styles.grid}>
           {session.looks.map((look, i) => (
@@ -67,37 +69,35 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   content: {
-    paddingHorizontal: 22,
-    paddingBottom: 48,
+    paddingHorizontal: 24,
+    paddingBottom: 56,
   },
   backLink: {
     fontFamily: family.sansMedium,
-    fontSize: 14,
-    color: colors.ink2,
+    fontSize: 13.5,
+    color: colors.muted,
     alignSelf: 'flex-start',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line2,
-    paddingBottom: 1,
-    marginBottom: 14,
+    marginBottom: 26,
   },
   eyebrowGap: {
-    marginTop: 8,
+    marginTop: 0,
   },
   title: {
     fontFamily: family.serif,
-    fontSize: 34,
-    lineHeight: 38,
+    fontSize: 36,
+    lineHeight: 41,
     color: colors.ink,
-    marginTop: 10,
+    marginTop: 12,
   },
   sub: {
     fontFamily: family.sans,
-    fontSize: 14.5,
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.muted,
-    marginTop: 6,
-    marginBottom: 26,
+    marginTop: 8,
+    marginBottom: 34,
   },
   grid: {
-    gap: 22,
+    gap: 30,
   },
 });

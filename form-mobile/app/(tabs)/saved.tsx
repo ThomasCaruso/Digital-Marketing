@@ -1,60 +1,76 @@
+import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppButton } from '../../src/components/AppButton';
-import { LookScene } from '../../src/components/LookScene';
 import { dayLabel, formatMoney, lookTotalCents } from '../../src/domain/selectors';
 import { useFormStore } from '../../src/state/store';
 import { colors, radius } from '../../src/theme/tokens';
-import { eyebrow, family } from '../../src/theme/typography';
+import { eyebrow, family, micro } from '../../src/theme/typography';
 
 /**
- * Checkpoint stub — proves the SavedLook snapshot + persistence layer works
- * across restarts. The full saved board (open / try-on / polish) is the next
- * phase, after the physical-device checkpoint.
+ * The wardrobe board — saved looks as a personal collection. Entries are
+ * immutable snapshots (see SavedLook); the full board interactions (open /
+ * try-on / polish) arrive with the next phase.
  */
 export default function SavedScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const saved = useFormStore(s => s.saved);
   const removeSaved = useFormStore(s => s.removeSaved);
 
   return (
     <View style={styles.root}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 24 }]}>
         <Text style={eyebrow}>Your wardrobe board</Text>
-        <Text style={styles.title}>Saved looks</Text>
+        <View style={styles.headRow}>
+          <Text style={styles.title}>Saved looks</Text>
+          {saved.length > 0 && (
+            <Text style={styles.count}>
+              {saved.length} kept
+            </Text>
+          )}
+        </View>
 
         {saved.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+            <Text style={styles.emptyTitle}>Nothing kept, yet.</Text>
             <Text style={styles.emptyNote}>
-              When a look lands, keep it here — exactly the version you saved, swaps
-              and colors included.
+              When a look lands, keep it here — exactly the version you saved,
+              colors and swaps included.
             </Text>
-            <AppButton label="Style something" variant="ghost" onPress={() => {}} />
+            <Pressable
+              onPress={() => router.push('/home')}
+              style={({ pressed }) => [styles.emptyAction, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Style something new"
+            >
+              <Text style={styles.emptyActionText}>Style the first look</Text>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.list}>
             {saved.map(entry => (
               <View key={entry.id} style={styles.row}>
-                <View style={styles.thumb}>
-                  <LookScene look={entry.look} figureScale={2.6} />
+                {/* abstract color study of the look — not a mannequin thumb */}
+                <View style={styles.study}>
+                  {entry.look.products.map(p => (
+                    <View key={p.id} style={[styles.studyBlock, { backgroundColor: p.hex }]} />
+                  ))}
                 </View>
                 <View style={styles.rowBody}>
                   <Text style={styles.rowTitle}>{entry.look.title}</Text>
                   <Text style={styles.rowMeta}>
-                    {formatMoney(lookTotalCents(entry.look))} total · Saved{' '}
-                    {dayLabel(entry.savedAt)}
+                    {formatMoney(lookTotalCents(entry.look))} · Kept {dayLabel(entry.savedAt)}
                   </Text>
-                  <Pressable
-                    onPress={() => removeSaved(entry.id)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.removeLink}>Remove</Text>
-                  </Pressable>
                 </View>
+                <Pressable
+                  onPress={() => removeSaved(entry.id)}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.remove, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${entry.look.title} from saved`}
+                >
+                  <Text style={styles.removeText}>Remove</Text>
+                </Pressable>
               </View>
             ))}
           </View>
@@ -70,64 +86,92 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   content: {
-    paddingHorizontal: 22,
-    paddingBottom: 48,
+    paddingHorizontal: 24,
+    paddingBottom: 56,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+  headRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   title: {
     fontFamily: family.serif,
-    fontSize: 34,
+    fontSize: 36,
     color: colors.ink,
-    marginTop: 10,
-    marginBottom: 26,
+    marginTop: 14,
+    marginBottom: 30,
   },
+  count: {
+    fontFamily: family.sansMedium,
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.muted,
+  },
+
+  /* ---- empty: whitespace and type, no dashed box ---- */
   empty: {
-    borderWidth: 1,
-    borderColor: colors.line2,
-    borderStyle: 'dashed',
-    borderRadius: radius.lg,
-    padding: 40,
     alignItems: 'center',
-    gap: 10,
+    paddingVertical: 64,
+    gap: 14,
   },
   emptyTitle: {
-    fontFamily: family.serif,
-    fontSize: 26,
+    fontFamily: family.serifItalic,
+    fontSize: 32,
     color: colors.ink,
   },
   emptyNote: {
     fontFamily: family.sans,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     color: colors.muted,
     textAlign: 'center',
-    marginBottom: 12,
+    maxWidth: 280,
+    marginBottom: 18,
   },
+  emptyAction: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line2,
+    paddingBottom: 3,
+  },
+  emptyActionText: {
+    ...micro,
+    color: colors.ink,
+  },
+
+  /* ---- the board ---- */
   list: {
-    gap: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
   },
   row: {
     flexDirection: 'row',
-    gap: 14,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    padding: 12,
+    alignItems: 'center',
+    gap: 18,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  thumb: {
-    width: 64,
-    height: 82,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
+  study: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  studyBlock: {
+    width: 22,
+    height: 46,
+    borderRadius: radius.sm / 2,
   },
   rowBody: {
     flex: 1,
-    justifyContent: 'center',
-    gap: 4,
+    gap: 5,
   },
   rowTitle: {
     fontFamily: family.serif,
-    fontSize: 20,
+    fontSize: 21,
     color: colors.ink,
   },
   rowMeta: {
@@ -135,11 +179,14 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: colors.muted,
   },
-  removeLink: {
+  remove: {
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  removeText: {
     fontFamily: family.sansMedium,
-    fontSize: 13,
-    color: colors.ink2,
+    fontSize: 12,
+    color: colors.muted,
     textDecorationLine: 'underline',
-    marginTop: 2,
   },
 });

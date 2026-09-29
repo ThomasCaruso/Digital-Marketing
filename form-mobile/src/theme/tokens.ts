@@ -27,14 +27,11 @@ export const radius = {
   pill: 999,
 } as const;
 
-/** iOS-style soft shadow; elevation keeps it legible on Android. */
-export const shadowCard = {
-  shadowColor: colors.ink,
-  shadowOpacity: 0.1,
-  shadowRadius: 18,
-  shadowOffset: { width: 0, height: 10 },
-  elevation: 2,
-} as const;
+/**
+ * Grounding shadow for the figure inside a LookScene — a soft ellipse at its
+ * feet, since RN shadows on nested transparent Views render as boxes on Android.
+ */
+export const groundShadow = 'rgba(25, 24, 19, 0.14)' as const;
 
 /** The web demo's easing, cubic-bezier(0.22, 0.61, 0.2, 1), approximated for RN. */
 export const easing = {

@@ -22,3 +22,12 @@ export const eyebrow: TextStyle = {
   textTransform: 'uppercase',
   color: '#7b766a',
 };
+
+/** Micro label — spec-sheet keys and quiet actions. Smaller and tighter than eyebrow. */
+export const micro: TextStyle = {
+  fontFamily: family.sansSemiBold,
+  fontSize: 10,
+  letterSpacing: 1.8,
+  textTransform: 'uppercase',
+  color: '#7b766a',
+};

@@ -1,38 +1,16 @@
 import { Tabs } from 'expo-router';
-import { BookmarkIcon, HomeIcon, PersonIcon } from '../../src/components/icons';
-import { colors } from '../../src/theme/tokens';
-import { family } from '../../src/theme/typography';
+import { FormTabBar } from '../../src/components/FormTabBar';
 
-/** Home / Saved / Your FORM — the web demo's bottom nav, native. */
+/** Home / Saved / Your FORM — quiet text-only chrome via FormTabBar. */
 export default function TabsLayout() {
+  // SDK 57 invokes `tabBar` as a plain function, so it must return an element
+  // (like the stock renderTabBarDefault does) — passing the component itself
+  // would run its hooks outside a React render and throw "Invalid hook call".
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: {
-          backgroundColor: 'rgba(251, 249, 244, 0.96)',
-          borderTopColor: colors.line,
-        },
-        tabBarLabelStyle: {
-          fontFamily: family.sansSemiBold,
-          fontSize: 11,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{ title: 'Home', tabBarIcon: ({ color }) => <HomeIcon color={color} /> }}
-      />
-      <Tabs.Screen
-        name="saved"
-        options={{ title: 'Saved', tabBarIcon: ({ color }) => <BookmarkIcon color={color} /> }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{ title: 'Your FORM', tabBarIcon: ({ color }) => <PersonIcon color={color} /> }}
-      />
+    <Tabs tabBar={props => <FormTabBar {...props} />} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="home" options={{ title: 'Home' }} />
+      <Tabs.Screen name="saved" options={{ title: 'Saved' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Your FORM' }} />
     </Tabs>
   );
 }
