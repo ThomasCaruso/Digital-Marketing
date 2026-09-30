@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, type ViewStyle } from 'react-native';
+import { MotionPressable } from './MotionPressable';
 import { colors } from '../theme/tokens';
 import { family } from '../theme/typography';
 
@@ -18,17 +19,17 @@ interface AppButtonProps {
  */
 export function AppButton({ label, onPress, variant = 'dark', small, disabled, style }: AppButtonProps) {
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
+      accessibilityState={{ disabled: !!disabled }}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         small && styles.small,
         variant === 'dark' ? styles.dark : styles.ghost,
         disabled && styles.disabled,
-        pressed && styles.pressed,
         style,
       ]}
     >
@@ -41,12 +42,13 @@ export function AppButton({ label, onPress, variant = 'dark', small, disabled, s
       >
         {label}
       </Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 13,

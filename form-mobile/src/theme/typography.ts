@@ -1,10 +1,6 @@
 import type { TextStyle } from 'react-native';
+import { colors } from './tokens';
 
-/**
- * Font family names as loaded in app/_layout.tsx via @expo-google-fonts packages.
- * The constants' runtime values ARE these font names (useFonts registers them under
- * the export name), so they must stay in sync with the useFonts call.
- */
 export const family = {
   serif: 'InstrumentSerif_400Regular',
   serifItalic: 'InstrumentSerif_400Regular_Italic',
@@ -14,20 +10,20 @@ export const family = {
   sansBold: 'DMSans_700Bold',
 } as const;
 
-/** Small uppercase tracked label — the web demo's `.eyebrow`. */
-export const eyebrow: TextStyle = {
-  fontFamily: family.sansSemiBold,
-  fontSize: 11,
-  letterSpacing: 2.4,
-  textTransform: 'uppercase',
-  color: '#7b766a',
-};
+export const type = {
+  display: { fontFamily: family.serif, fontSize: 64, lineHeight: 64, color: colors.ink },
+  title: { fontFamily: family.serif, fontSize: 48, lineHeight: 50, color: colors.ink },
+  editorial: { fontFamily: family.serif, fontSize: 30, lineHeight: 34, color: colors.ink },
+  body: { fontFamily: family.sans, fontSize: 14, lineHeight: 22, color: colors.ink2 },
+  caption: { fontFamily: family.sans, fontSize: 12, lineHeight: 18, color: colors.muted },
+} satisfies Record<string, TextStyle>;
 
-/** Micro label — spec-sheet keys and quiet actions. Smaller and tighter than eyebrow. */
-export const micro: TextStyle = {
-  fontFamily: family.sansSemiBold,
+export const eyebrow: TextStyle = {
+  fontFamily: family.sansMedium,
   fontSize: 10,
-  letterSpacing: 1.8,
+  lineHeight: 16,
+  letterSpacing: 2,
   textTransform: 'uppercase',
-  color: '#7b766a',
+  color: colors.muted,
 };
+export const micro: TextStyle = { ...eyebrow, letterSpacing: 1.4 };

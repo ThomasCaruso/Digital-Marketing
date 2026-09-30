@@ -200,12 +200,12 @@ export const LOADING_MESSAGES: readonly string[] = [
   'Finding the right shoes',
 ];
 
-/** The four strongest briefs, hand-picked — not a chip rack. */
+/** The four starting points, hand-picked — inspiration, not filters. */
 export const STARTING_POINTS: readonly { label: string; prompt: string }[] = [
-  { label: 'Dinner, Saturday', prompt: 'Dinner in SoHo Saturday. 55°F. I want to look expensive but not overdressed. Under $350.' },
-  { label: 'Date night', prompt: 'Date night. Elevated but relaxed — a good restaurant, no jacket required. Under $250.' },
-  { label: 'A workday', prompt: 'A normal workday. Smart, quiet, comfortable. Nothing flashy.' },
+  { label: 'Dinner', prompt: 'Dinner in SoHo Saturday. 55°F. I want to look expensive but not overdressed. Under $350.' },
   { label: 'Going out', prompt: 'Going out with friends. Darker palette, easy shoes, has to stay sharp late.' },
+  { label: 'Work', prompt: 'A normal workday. Smart, quiet, comfortable. Nothing flashy.' },
+  { label: 'Weekend', prompt: 'A slow weekend. Coffee, errands, maybe an early dinner — relaxed but still put together.' },
 ];
 
 export const STYLE_OPTIONS: readonly StyleOption[] = [

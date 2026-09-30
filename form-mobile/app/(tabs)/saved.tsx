@@ -1,192 +1,38 @@
+import { MotionPressable } from '../../src/components/MotionPressable';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { dayLabel, formatMoney, lookTotalCents } from '../../src/domain/selectors';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { EditorialScreen, editorial } from '../../src/components/Editorial';
+import { FormIcon } from '../../src/components/FormIcon';
+import { ProductVisual } from '../../src/components/ProductVisual';
+import { LookVisual } from '../../src/components/LookVisual';
+import { formatMoney, lookTotalCents } from '../../src/domain/selectors';
 import { useFormStore } from '../../src/state/store';
-import { colors, radius } from '../../src/theme/tokens';
-import { eyebrow, family, micro } from '../../src/theme/typography';
-
-/**
- * The wardrobe board — saved looks as a personal collection. Entries are
- * immutable snapshots (see SavedLook); the full board interactions (open /
- * try-on / polish) arrive with the next phase.
- */
+import { colors } from '../../src/theme/tokens';
+import { family } from '../../src/theme/typography';
 export default function SavedScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const saved = useFormStore(s => s.saved);
-  const removeSaved = useFormStore(s => s.removeSaved);
-
-  return (
-    <View style={styles.root}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 24 }]}>
-        <Text style={eyebrow}>Your wardrobe board</Text>
-        <View style={styles.headRow}>
-          <Text style={styles.title}>Saved looks</Text>
-          {saved.length > 0 && (
-            <Text style={styles.count}>
-              {saved.length} kept
-            </Text>
-          )}
-        </View>
-
-        {saved.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Nothing kept, yet.</Text>
-            <Text style={styles.emptyNote}>
-              When a look lands, keep it here — exactly the version you saved,
-              colors and swaps included.
-            </Text>
-            <Pressable
-              onPress={() => router.push('/home')}
-              style={({ pressed }) => [styles.emptyAction, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Style something new"
-            >
-              <Text style={styles.emptyActionText}>Style the first look</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {saved.map(entry => (
-              <View key={entry.id} style={styles.row}>
-                {/* abstract color study of the look — not a mannequin thumb */}
-                <View style={styles.study}>
-                  {entry.look.products.map(p => (
-                    <View key={p.id} style={[styles.studyBlock, { backgroundColor: p.hex }]} />
-                  ))}
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{entry.look.title}</Text>
-                  <Text style={styles.rowMeta}>
-                    {formatMoney(lookTotalCents(entry.look))} · Kept {dayLabel(entry.savedAt)}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => removeSaved(entry.id)}
-                  hitSlop={8}
-                  style={({ pressed }) => [styles.remove, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${entry.look.title} from saved`}
-                >
-                  <Text style={styles.removeText}>Remove</Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+  const [tab, setTab] = useState<'Looks' | 'Pieces'>('Looks');
+  const state = useFormStore();
+  return <EditorialScreen><Text style={[editorial.heading, styles.heading]}>Saved</Text>
+    <View style={styles.tabs}>{(['Looks', 'Pieces'] as const).map(value => <MotionPressable key={value} accessibilityRole="tab" accessibilityState={{ selected: value === tab }} onPress={() => setTab(value)} style={[styles.tab, value === tab && styles.tabActive]}><Text style={[styles.tabText, value === tab && { color: colors.ink }]}>{value}</Text></MotionPressable>)}</View>
+    <View style={styles.list}>
+      {tab === 'Looks' && state.saved.map(entry => <View key={entry.id} style={styles.row}><MotionPressable accessibilityRole="button" accessibilityLabel={'Open saved edit ' + entry.look.title} onPress={() => { state.selectLook(entry.look); router.push({ pathname: '/results', params: { lookId: entry.id, savedId: entry.id } }); }} style={styles.open}><View style={styles.thumbnail}><LookVisual look={entry.look} photograph /></View><View style={styles.rowBody}><Text style={styles.rowTitle}>{entry.look.title}</Text><Text numberOfLines={1} style={styles.meta}>{entry.look.products.length} {entry.look.products.length === 1 ? 'piece' : 'pieces'} · {formatMoney(lookTotalCents(entry.look))} · {entry.occasion}</Text></View></MotionPressable><MotionPressable accessibilityRole="button" accessibilityLabel={'Remove ' + entry.look.title + ' from saved'} onPress={() => state.removeSaved(entry.id)} style={styles.more}><FormIcon name="close" size={18} color={colors.muted} /></MotionPressable></View>)}
+      {tab === 'Pieces' && state.savedPieces.map(entry => <View key={entry.id} style={styles.row}><MotionPressable accessibilityRole="button" accessibilityLabel={'Open saved piece ' + entry.product.name} onPress={() => router.push({ pathname: '/product', params: { id: entry.id } })} style={styles.open}><View style={styles.thumbnail}><ProductVisual product={entry.product} /></View><View style={styles.rowBody}><Text style={styles.rowTitle}>{entry.product.name}</Text><Text numberOfLines={1} style={styles.meta}>{entry.product.brand} · {entry.product.color} · {formatMoney(entry.product.priceCents)}</Text></View></MotionPressable><MotionPressable accessibilityRole="button" accessibilityLabel={'Remove ' + entry.product.name + ' from saved'} onPress={() => state.togglePiece(entry.product)} style={styles.more}><FormIcon name="close" size={18} color={colors.muted} /></MotionPressable></View>)}
+      {((tab === 'Looks' && !state.saved.length) || (tab === 'Pieces' && !state.savedPieces.length)) && <View style={styles.empty}><Text style={editorial.title}>{tab === 'Looks' ? 'Room for your next look.' : 'Keep what feels like you.'}</Text><Text style={[editorial.secondary, styles.emptyCopy]}>{tab === 'Looks' ? 'Save a complete look to find it here.' : 'Your saved pieces will find a home here.'}</Text><MotionPressable accessibilityRole="button" onPress={() => router.navigate(tab === 'Looks' ? '/edits' : '/home')} style={styles.discover}><Text style={styles.discoverText}>{tab === 'Looks' ? 'Explore your edit' : 'Discover pieces'} →</Text></MotionPressable></View>}
     </View>
-  );
+  </EditorialScreen>;
 }
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.paper,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 56,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
-  headRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  title: {
-    fontFamily: family.serif,
-    fontSize: 36,
-    color: colors.ink,
-    marginTop: 14,
-    marginBottom: 30,
-  },
-  count: {
-    fontFamily: family.sansMedium,
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: colors.muted,
-  },
-
-  /* ---- empty: whitespace and type, no dashed box ---- */
-  empty: {
-    alignItems: 'center',
-    paddingVertical: 64,
-    gap: 14,
-  },
-  emptyTitle: {
-    fontFamily: family.serifItalic,
-    fontSize: 32,
-    color: colors.ink,
-  },
-  emptyNote: {
-    fontFamily: family.sans,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.muted,
-    textAlign: 'center',
-    maxWidth: 280,
-    marginBottom: 18,
-  },
-  emptyAction: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line2,
-    paddingBottom: 3,
-  },
-  emptyActionText: {
-    ...micro,
-    color: colors.ink,
-  },
-
-  /* ---- the board ---- */
-  list: {
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 18,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-  study: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  studyBlock: {
-    width: 22,
-    height: 46,
-    borderRadius: radius.sm / 2,
-  },
-  rowBody: {
-    flex: 1,
-    gap: 5,
-  },
-  rowTitle: {
-    fontFamily: family.serif,
-    fontSize: 21,
-    color: colors.ink,
-  },
-  rowMeta: {
-    fontFamily: family.sans,
-    fontSize: 12.5,
-    color: colors.muted,
-  },
-  remove: {
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-  },
-  removeText: {
-    fontFamily: family.sansMedium,
-    fontSize: 12,
-    color: colors.muted,
-    textDecorationLine: 'underline',
-  },
+  heading: { marginTop: 20, marginBottom: 20 }, tabs: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line, gap: 36 },
+  tab: { minHeight: 48, minWidth: 48, justifyContent: 'center', paddingBottom: 10, borderBottomWidth: 1.5, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: colors.ink }, tabText: { fontFamily: family.sans, fontSize: 15, color: colors.muted },
+  list: { paddingTop: 24, gap: 24 }, row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  open: { flex: 1, flexDirection: 'row', gap: 18, alignItems: 'center' },
+  thumbnail: { width: 96, height: 128, borderRadius: 10, overflow: 'hidden', backgroundColor: colors.paper2 },
+  rowBody: { flex: 1, gap: 6, paddingVertical: 8 }, rowTitle: { fontFamily: family.sansMedium, fontSize: 15, lineHeight: 21, color: colors.ink },
+  meta: { ...editorial.secondary, fontSize: 12, lineHeight: 18 },
+  more: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', marginRight: -6 },
+  empty: { paddingVertical: 76 }, emptyCopy: { marginTop: 10 }, discover: { marginTop: 22, minHeight: 48, justifyContent: 'center' },
+  discoverText: { fontFamily: family.sansMedium, fontSize: 14, color: colors.ink },
 });

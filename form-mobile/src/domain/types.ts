@@ -26,6 +26,13 @@ export interface Product {
   brand: string;
   name: string;
   priceCents: number;
+  /** Product image or transparent cutout, rendered without storefront framing. */
+  imageUri?: string;
+  assetKey?: string;
+  material?: string;
+  availableSizes?: string[];
+  styleTags?: string[];
+  formality?: number;
   /** Currently selected color name. */
   color: string;
   /** Currently selected color hex — drives the figure recolor. */
@@ -54,13 +61,21 @@ export interface Look {
   why: string;
   scene: LookScene;
   products: Product[];
+  previewKey?: 'quiet' | 'night' | 'weekend';
+  refinements?: Refinement[];
 }
+
+export type Refinement = 'Less formal' | 'More formal' | 'Lower price' | 'Different shoes' | 'Warmer' | 'More relaxed';
+export type ReviewStatus = 'saved' | 'passed';
+export interface EditRequest { occasion: string; dressCode: string; budgetCents: number; location?: string; notes?: string; }
+export interface SavedPiece { id: string; product: Product; savedAt: number; }
 
 export interface Session {
   id: string;
   occasion: string;
   looks: Look[];
   createdAt: number;
+  request?: EditRequest;
 }
 
 /**
@@ -72,6 +87,7 @@ export interface SavedLook {
   id: string;
   occasion: string;
   savedAt: number;
+  request?: EditRequest;
   look: Look;
 }
 
@@ -93,9 +109,14 @@ export interface Profile {
   styles: string[];
   priority: string;
   brands: string[];
+  favoriteColors?: string[];
+  avoidedColors?: string[];
+  avoidedBrands?: string[];
 }
 
 export interface StyleOption {
   name: string;
   description: string;
 }
+
+

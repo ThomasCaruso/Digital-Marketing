@@ -1,0 +1,51 @@
+const assert = require('node:assert/strict');
+require('./test-product-loop.cjs');
+const Module = require('node:module');
+const originalLoad = Module._load;
+const memory = new Map();
+const storage = { getItem: async key => memory.get(key) ?? null, setItem: async (key,value) => { memory.set(key,value); }, removeItem: async key => memory.delete(key) };
+Module._load = function(request, parent, main) {
+  if (request === '@react-native-async-storage/async-storage') return { __esModule: true, default: storage };
+  return originalLoad.call(this,request,parent,main);
+};
+async function run() {
+  const file = require.resolve('../src/state/store.ts');
+  let store = require(file).useFormStore;
+  await store.persist.rehydrate();
+  const { fixtureLooks, catalogProducts } = require('../src/data/catalog.ts');
+  const fixture = fixtureLooks[1];
+  store.getState().togglePiece(catalogProducts[1]);
+  store.getState().passPiece(catalogProducts[4]);
+  const profile = { ...store.getState().profile, styles: ['Minimal'], avoidedBrands: ['COS'], budgetCents: 20000, waist: '32' };
+  store.getState().updateProfile(profile);
+  const request = { occasion: 'Dinner in Manhattan', dressCode: 'Smart casual', budgetCents: 35000, notes: 'Drinks after' };
+  store.getState().addSession({ id: 'persist-test', occasion: request.occasion, looks: [fixture], request, createdAt: 42 });
+  store.getState().toggleSaved(fixture, request.occasion);
+  const before = JSON.parse(JSON.stringify(store.getState().saved[0]));
+  store.getState().replaceLook(fixture, { ...fixture, id: 'adjusted-test', title: 'Changed', products: [catalogProducts[0]] }, request.occasion);
+  assert.deepEqual(JSON.parse(JSON.stringify(store.getState().saved[0])), before, 'Saved snapshot remains unchanged after adjusting current look');
+  await new Promise(resolve => setTimeout(resolve, 10));
+  delete require.cache[file];
+  store = require(file).useFormStore;
+  await store.persist.rehydrate();
+  assert.deepEqual(store.getState().profile, profile, 'Profile persists through store recreation');
+  assert.equal(store.getState().savedPieces[0].id, catalogProducts[1].id);
+  assert.equal(store.getState().recommendationReview[catalogProducts[4].id], 'passed');
+  assert.deepEqual(JSON.parse(JSON.stringify(store.getState().saved[0])), before);
+  assert.deepEqual(store.getState().saved[0].request, request);
+  assert.deepEqual(store.getState().sessions[0].request, request);
+  store.getState().refreshSelection();
+  assert.deepEqual(store.getState().recommendationReview, {});
+  assert.equal(store.getState().savedPieces.length, 1, 'Refresh preserves saved pieces');
+  const legacy = { state: { profile: { name: 'Legacy', styles: ['Classic'], budgetCents: 30000, brands: ['COS'] }, saved: [], sessions: [] }, version: 1 };
+  memory.set('form-mobile-v1', JSON.stringify(legacy));
+  delete require.cache[file];
+  store = require(file).useFormStore;
+  await store.persist.rehydrate();
+  assert.equal(store.getState().profile.name, 'Legacy');
+  assert.deepEqual(store.getState().savedPieces, []);
+  assert.deepEqual(store.getState().profile.avoidedBrands, []);
+  console.log('PASS: restart persistence, legacy defaults, immutable look snapshots, saved request retention, refresh preservation');
+}
+run().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { Module._load = originalLoad; });
+

@@ -1,103 +1,41 @@
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LookCard } from '../src/components/LookCard';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { EditorialScreen, SectionLabel, editorial } from '../src/components/Editorial';
+import { DetailHeader } from '../src/components/DetailHeader';
+import { CollageBoard } from '../src/components/CollageBoard';
+import { LookActions, LookPieces } from '../src/components/LookControls';
 import { showToast } from '../src/components/Toast';
+import { fixtureLooks } from '../src/data/catalog';
+import { refinementBudget, swapFixturePiece } from '../src/domain/fixtureEngine';
+import { formatMoney, lookTotalCents } from '../src/domain/selectors';
 import { useFormStore } from '../src/state/store';
 import { colors } from '../src/theme/tokens';
-import { eyebrow, family } from '../src/theme/typography';
-
-/** Three directions for the occasion, pushed from Home. */
-export default function ResultsScreen() {
+import { family } from '../src/theme/typography';
+export default function LookDetailsScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-
-  const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
-
-  const hasHydrated = useFormStore(s => s.hasHydrated);
-  const session = useFormStore(s => s.sessions.find(x => x.id === sessionId) ?? null);
-  const saved = useFormStore(s => s.saved);
-  const toggleSaved = useFormStore(s => s.toggleSaved);
-
-  if (!hasHydrated) return null;
-  if (!session) return <Redirect href="/home" />;
-
-  const handleToggleSave = (lookId: string, occasion: string) => {
-    const look = session.looks.find(l => l.id === lookId);
-    if (!look) return;
-    const nowSaved = toggleSaved(look, occasion);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    showToast(nowSaved ? 'Kept to your board' : 'Removed from your board');
-  };
-
-  return (
-    <View style={styles.root}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
-          <Text style={styles.backLink}>← New brief</Text>
-        </Pressable>
-        <Text style={[eyebrow, styles.eyebrowGap]}>Styled for</Text>
-        <Text style={styles.title}>“{session.occasion}”</Text>
-        <Text style={styles.sub}>
-          Three directions, filtered for your fit, taste, and budget.
-        </Text>
-
-        <View style={styles.grid}>
-          {session.looks.map((look, i) => (
-            <LookCard
-              key={look.id}
-              look={look}
-              index={i}
-              saved={saved.some(entry => entry.id === look.id)}
-              onOpen={() => showToast('Look detail arrives at the next checkpoint')}
-              onTryOn={() => showToast('Try-on arrives at the next checkpoint')}
-              onToggleSave={() => handleToggleSave(look.id, session.occasion)}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  const { lookId, savedId } = useLocalSearchParams<{ lookId?: string; savedId?: string }>();
+  const state = useFormStore();
+  const saved = savedId ? state.saved.find(s => s.id === savedId) : undefined;
+  const session = state.sessions.find(s => s.looks.some(l => l.id === lookId));
+  const look = saved?.look ?? session?.looks.find(l => l.id === lookId) ?? fixtureLooks.find(l => l.id === lookId) ?? (state.selectedLook?.id === lookId || !lookId ? state.selectedLook : undefined);
+  if (!look) return <EditorialScreen><DetailHeader title="Your edit" /><Text style={editorial.title}>This edit is no longer available.</Text></EditorialScreen>;
+  const request = saved?.request ?? session?.request;
+  const occasion = saved?.occasion ?? session?.occasion ?? 'Curated for you';
+  return <EditorialScreen><DetailHeader title="Your edit" />
+    <Text style={editorial.heading}>{look.title}</Text><Text style={[editorial.secondary, { marginTop: 10 }]}>{look.description}</Text>
+    <View style={{ marginTop: 20 }}><CollageBoard look={look} boardHeight={420} onSwap={piece => {
+      const next = swapFixturePiece(look, piece.id, state.profile, refinementBudget(look.id, state.profile, state.sessions, state.saved));
+      if (!next) { showToast('No alternative piece within your preferences'); return; }
+      const added = next.products.find(p => !look.products.some(q => q.id === p.id));
+      state.replaceLook(look, next, occasion); router.setParams({ lookId: next.id, savedId: '' }); showToast('Swapped in ' + (added?.name ?? 'a new piece'));
+    }} /></View>
+    <View style={styles.totalRow}><Text style={editorial.label}>Total ({look.products.length} {look.products.length === 1 ? 'piece' : 'pieces'})</Text><Text style={styles.totalPrice}>{formatMoney(lookTotalCents(look))}</Text></View>
+    {request && <View style={{ marginTop: 20 }}><SectionLabel>Your request</SectionLabel><Text style={editorial.body}>{request.occasion} · {request.dressCode}</Text><Text style={editorial.secondary}>{request.location}{request.location ? ' · ' : ''}Budget {formatMoney(request.budgetCents)}</Text>{!!request.notes && <Text style={editorial.secondary}>{request.notes}</Text>}</View>}
+    <View style={{ marginTop: 24 }}><LookPieces look={look} /></View><View style={editorial.rule} /><SectionLabel>Why this edit</SectionLabel><Text style={[editorial.body, { marginTop: 8 }]}>{look.why}</Text><Text style={editorial.secondary}>Demo fixture styling</Text>
+    <LookActions look={look} occasion={occasion} onAdjusted={next => router.setParams({ lookId: next.id, savedId: '' })} />
+  </EditorialScreen>;
 }
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.paper,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 56,
-  },
-  backLink: {
-    fontFamily: family.sansMedium,
-    fontSize: 13.5,
-    color: colors.muted,
-    alignSelf: 'flex-start',
-    marginBottom: 26,
-  },
-  eyebrowGap: {
-    marginTop: 0,
-  },
-  title: {
-    fontFamily: family.serif,
-    fontSize: 36,
-    lineHeight: 41,
-    color: colors.ink,
-    marginTop: 12,
-  },
-  sub: {
-    fontFamily: family.sans,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.muted,
-    marginTop: 8,
-    marginBottom: 34,
-  },
-  grid: {
-    gap: 30,
-  },
+  totalRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 20, paddingBottom: 4 },
+  totalPrice: { fontFamily: family.serif, fontSize: 27, lineHeight: 31, color: colors.ink },
 });
