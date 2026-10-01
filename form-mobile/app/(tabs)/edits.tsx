@@ -9,6 +9,7 @@ import { showToast } from '../../src/components/Toast';
 import { useCurrentEdit } from '../../src/hooks/useCurrentEdit';
 import { formatMoney, lookTotalCents } from '../../src/domain/selectors';
 import { refinementBudget, swapFixturePiece } from '../../src/domain/fixtureEngine';
+import { removePieceFromLook } from '../../src/domain/garments';
 import { useFormStore } from '../../src/state/store';
 import { colors } from '../../src/theme/tokens';
 import { family } from '../../src/theme/typography';
@@ -37,6 +38,10 @@ export default function EditsScreen() {
           if (!next) { showToast('No alternative piece within your preferences'); return; }
           const added = next.products.find(p => !item.products.some(q => q.id === p.id));
           selectLook(next); useFormStore.getState().replaceLook(item, next, occasion); showToast('Swapped in ' + (added?.name ?? 'a new piece'));
+        }} onRemovePiece={piece => {
+          const next = removePieceFromLook(item, piece.id);
+          if (next === item) return;
+          selectLook(next); useFormStore.getState().replaceLook(item, next, occasion); showToast('Removed from this board');
         }} /></View>)}
       </ScrollView>
       <View style={styles.metaRow}><View style={styles.metaRule} /><Text style={styles.metaText}>{occasion.toUpperCase()}{location ? ' — ' + location.toUpperCase() : ''}</Text><View style={styles.metaRule} /></View>

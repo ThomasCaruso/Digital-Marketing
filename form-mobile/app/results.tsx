@@ -7,6 +7,7 @@ import { LookActions, LookPieces } from '../src/components/LookControls';
 import { showToast } from '../src/components/Toast';
 import { fixtureLooks } from '../src/data/catalog';
 import { refinementBudget, swapFixturePiece } from '../src/domain/fixtureEngine';
+import { removePieceFromLook } from '../src/domain/garments';
 import { formatMoney, lookTotalCents } from '../src/domain/selectors';
 import { useFormStore } from '../src/state/store';
 import { colors } from '../src/theme/tokens';
@@ -28,6 +29,10 @@ export default function LookDetailsScreen() {
       if (!next) { showToast('No alternative piece within your preferences'); return; }
       const added = next.products.find(p => !look.products.some(q => q.id === p.id));
       state.replaceLook(look, next, occasion); router.setParams({ lookId: next.id, savedId: '' }); showToast('Swapped in ' + (added?.name ?? 'a new piece'));
+    }} onRemovePiece={piece => {
+      const next = removePieceFromLook(look, piece.id);
+      if (next === look) return;
+      state.replaceLook(look, next, occasion); router.setParams({ lookId: next.id, savedId: '' }); showToast('Removed from this board');
     }} /></View>
     <View style={styles.totalRow}><Text style={editorial.label}>Total ({look.products.length} {look.products.length === 1 ? 'piece' : 'pieces'})</Text><Text style={styles.totalPrice}>{formatMoney(lookTotalCents(look))}</Text></View>
     {request && <View style={{ marginTop: 20 }}><SectionLabel>Your request</SectionLabel><Text style={editorial.body}>{request.occasion} · {request.dressCode}</Text><Text style={editorial.secondary}>{request.location}{request.location ? ' · ' : ''}Budget {formatMoney(request.budgetCents)}</Text>{!!request.notes && <Text style={editorial.secondary}>{request.notes}</Text>}</View>}

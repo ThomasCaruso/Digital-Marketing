@@ -5,7 +5,8 @@
  */
 import type { ColorOption, Look, StyleOption } from '../domain/types';
 
-export const SLOT_PALETTES: Record<Look['products'][number]['slot'], readonly ColorOption[]> = {
+/** Catalog fixtures ship in three slots; uploads extend the model without demo palettes. */
+export const SLOT_PALETTES: Record<'top' | 'pants' | 'shoes', readonly ColorOption[]> = {
   top: [
     { name: 'Charcoal', hex: '#24262b' },
     { name: 'Stone', hex: '#d6cfc2' },

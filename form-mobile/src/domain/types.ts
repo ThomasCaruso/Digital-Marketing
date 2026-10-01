@@ -3,7 +3,11 @@
  * Money is ALWAYS integer cents internally; format only at the UI edge.
  */
 
-export type GarmentSlot = 'top' | 'pants' | 'shoes';
+/** Shared slot vocabulary across catalog products and user-uploaded garments. */
+export type GarmentSlot = 'top' | 'pants' | 'outerwear' | 'shoes' | 'accessory';
+
+/** Where a garment came from. Catalog pieces ship with FORM; uploads stay on the device. */
+export type GarmentSource = 'catalog' | 'user_upload';
 
 export interface ColorOption {
   name: string;
@@ -23,12 +27,18 @@ export interface ProductAlternative {
 export interface Product {
   id: string;
   slot: GarmentSlot;
+  /** Garment source. Absent means catalog. Uploaded garments carry 'user_upload' plus a localUri. */
+  source?: GarmentSource;
   brand: string;
   name: string;
   priceCents: number;
   /** Product image or transparent cutout, rendered without storefront framing. */
   imageUri?: string;
   assetKey?: string;
+  /** Device-local file URI — user uploads only. Never a data: or remote URI. */
+  localUri?: string;
+  /** width ÷ height of localUri, when known at intake; boards re-measure on load. */
+  aspect?: number;
   material?: string;
   availableSizes?: string[];
   styleTags?: string[];
@@ -117,6 +127,24 @@ export interface Profile {
 export interface StyleOption {
   name: string;
   description: string;
+}
+
+/**
+ * A garment the user photographed themselves. The image file lives in
+ * app-owned document storage; only this metadata (including the local URI)
+ * is persisted. No cloud copy, no AI processing — local-only in this build.
+ */
+export interface UserGarment {
+  id: string;
+  source: 'user_upload';
+  /** Durable local file URI inside app document storage. */
+  localUri: string;
+  slot: GarmentSlot;
+  name?: string;
+  color?: string;
+  /** width ÷ height of the photo, when the picker reported dimensions. */
+  aspect?: number;
+  createdAt: number;
 }
 
 

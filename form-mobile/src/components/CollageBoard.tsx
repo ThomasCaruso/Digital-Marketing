@@ -5,6 +5,7 @@ import { MotionPressable } from './MotionPressable';
 import { FormIcon } from './FormIcon';
 import { ProductVisual } from './ProductVisual';
 import { productPhotography } from '../data/photography';
+import { isUserUpload, slotLabel } from '../domain/garments';
 import { formatMoney } from '../domain/selectors';
 import type { Look, Product } from '../domain/types';
 import { colors } from '../theme/tokens';
@@ -85,27 +86,37 @@ const FALLBACK_ASPECT = 280 / 300;
  * `interactive={false}` is a quiet, non-pressable composition for thumbnails
  * and secondary surfaces. `fill` stretches to the parent instead of a fixed
  * height, so the same board scales from a 96dp thumbnail to a full screen.
+ * `onRemovePiece` (uploads only) lets an editable surface take a user
+ * garment back off the board.
  */
-export function CollageBoard({ look, boardHeight = 420, interactive = true, fill = false, onSwap }: { look: Look; boardHeight?: number; interactive?: boolean; fill?: boolean; onSwap?: (product: Product) => void }) {
+export function CollageBoard({ look, boardHeight = 420, interactive = true, fill = false, onSwap, onRemovePiece }: { look: Look; boardHeight?: number; interactive?: boolean; fill?: boolean; onSwap?: (product: Product) => void; onRemovePiece?: (product: Product) => void }) {
   const router = useRouter();
   const [active, setActive] = useState<Product | null>(null);
   const [frame, setFrame] = useState({ w: 0, h: 0 });
   const [measured, setMeasured] = useState<Record<string, number>>({});
+  const [missing, setMissing] = useState<Record<string, boolean>>({});
   const ratio = frame.h ? frame.w / frame.h : 0.75;
   return <View onLayout={e => setFrame({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={[styles.board, { height: fill ? '100%' : boardHeight }]}>
     {orderedFor(look).map((product, index) => {
       const tile = tileFor(look, index);
-      const aspect = measured[product.id] ?? productPhotography[product.id]?.aspect ?? FALLBACK_ASPECT;
+      const uploaded = isUserUpload(product);
+      const aspect = measured[product.id] ?? (uploaded ? product.aspect : undefined) ?? productPhotography[product.id]?.aspect ?? FALLBACK_ASPECT;
       const height = Math.min(tile.w * ratio / aspect, tile.maxH, 98 - tile.y);
       const photo = productPhotography[product.id]?.source;
       const isActive = active?.id === product.id;
-      const image = photo
-        ? <Image source={photo} resizeMode="cover" onLoad={e => { const { width, height: ih } = e.nativeEvent.source; if (width && ih && Math.abs(width / ih - aspect) / aspect > 0.04) setMeasured(m => (m[product.id] === width / ih ? m : { ...m, [product.id]: width / ih })); }} style={styles.image} accessibilityLabel={product.name + ', product photograph'} />
-        : <View style={styles.fallback}><ProductVisual product={product} /></View>;
+      const measure = (e: { nativeEvent: { source: { width: number; height: number } } }) => { const { width, height: ih } = e.nativeEvent.source; if (width && ih && Math.abs(width / ih - aspect) / aspect > 0.04) setMeasured(m => (m[product.id] === width / ih ? m : { ...m, [product.id]: width / ih })); };
+      // Uploads always render the user's own photograph — never the illustrated garment fallback.
+      const image = uploaded
+        ? missing[product.id]
+          ? <View style={styles.missing}><Text style={styles.missingText}>Photo{'\n'}unavailable</Text></View>
+          : <Image source={{ uri: product.localUri }} resizeMode="cover" onError={() => setMissing(m => ({ ...m, [product.id]: true }))} onLoad={measure} style={styles.image} accessibilityLabel={product.name + ', your uploaded photo'} />
+        : photo
+          ? <Image source={photo} resizeMode="cover" onLoad={measure} style={styles.image} accessibilityLabel={product.name + ', product photograph'} />
+          : <View style={styles.fallback}><ProductVisual product={product} /></View>;
       const geometry: ViewStyle = { left: `${tile.x}%`, top: `${tile.y}%`, width: `${tile.w}%`, height: `${height}%`, zIndex: tile.z, transform: [{ rotate: tile.r + 'deg' }] };
       if (!interactive) return <View key={product.id} style={[styles.tile, geometry]}>{image}</View>;
       return <MotionPressable key={product.id} accessibilityRole="button"
-        accessibilityLabel={'Inspect ' + product.brand + ' ' + product.name + ', ' + formatMoney(product.priceCents)}
+        accessibilityLabel={uploaded ? 'Inspect ' + product.name + ', your uploaded ' + slotLabel(product.slot).toLowerCase() : 'Inspect ' + product.brand + ' ' + product.name + ', ' + formatMoney(product.priceCents)}
         accessibilityState={{ expanded: isActive }}
         onPress={() => setActive(isActive ? null : product)}
         style={[styles.tile, geometry]}>
@@ -113,16 +124,23 @@ export function CollageBoard({ look, boardHeight = 420, interactive = true, fill
       </MotionPressable>;
     })}
     {active && <View style={styles.card}>
-      <View style={{ flex: 1 }}>
+      {isUserUpload(active) ? <View style={{ flex: 1 }}>
+        <Text style={styles.brand}>YOUR UPLOAD</Text>
+        <Text numberOfLines={2} style={styles.name}>{active.name}</Text>
+        <Text numberOfLines={1} style={styles.meta}>{slotLabel(active.slot)}{active.color && active.color !== active.name ? ' · ' + active.color : ''}</Text>
+      </View> : <View style={{ flex: 1 }}>
         <Text style={styles.brand}>{active.brand.toUpperCase()}</Text>
         <Text numberOfLines={2} style={styles.name}>{active.name}</Text>
         <Text numberOfLines={1} style={styles.meta}>{active.color} · {formatMoney(active.priceCents)}</Text>
-      </View>
-      <MotionPressable accessibilityRole="button" accessibilityLabel={'View ' + active.name + ' details'} onPress={() => router.push({ pathname: '/product', params: { id: active.id } })} style={styles.view}>
+      </View>}
+      {!isUserUpload(active) && <MotionPressable accessibilityRole="button" accessibilityLabel={'View ' + active.name + ' details'} onPress={() => router.push({ pathname: '/product', params: { id: active.id } })} style={styles.view}>
         <Text style={styles.viewText}>View</Text><FormIcon name="arrow" size={16} color={colors.ink} />
-      </MotionPressable>
-      {onSwap && <MotionPressable accessibilityRole="button" accessibilityLabel={'Swap ' + active.name + ' for an alternative'} onPress={() => { const piece = active; setActive(null); onSwap(piece); }} style={styles.view}>
+      </MotionPressable>}
+      {!isUserUpload(active) && onSwap && <MotionPressable accessibilityRole="button" accessibilityLabel={'Swap ' + active.name + ' for an alternative'} onPress={() => { const piece = active; setActive(null); onSwap(piece); }} style={styles.view}>
         <Text style={styles.viewText}>Swap</Text><FormIcon name="rewind" size={15} color={colors.ink} />
+      </MotionPressable>}
+      {isUserUpload(active) && onRemovePiece && <MotionPressable accessibilityRole="button" accessibilityLabel={'Remove ' + active.name + ' from this board'} onPress={() => { const piece = active; setActive(null); onRemovePiece(piece); }} style={styles.view}>
+        <Text style={styles.viewText}>Remove</Text><FormIcon name="close" size={13} color={colors.ink} />
       </MotionPressable>}
       <MotionPressable accessibilityRole="button" accessibilityLabel="Close piece details" onPress={() => setActive(null)} style={styles.close}>
         <FormIcon name="close" size={15} color={colors.muted} />
@@ -135,6 +153,8 @@ const styles = StyleSheet.create({
   tile: { position: 'absolute', overflow: 'hidden' },
   image: { width: '100%', height: '100%' },
   fallback: { flex: 1, backgroundColor: colors.card, padding: '6%' },
+  missing: { flex: 1, backgroundColor: colors.paper2, alignItems: 'center', justifyContent: 'center', padding: 10 },
+  missingText: { fontFamily: family.sans, fontSize: 11, lineHeight: 15, textAlign: 'center', color: colors.muted },
   card: { position: 'absolute', left: 10, right: 10, bottom: 10, zIndex: 40, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.line, paddingHorizontal: 14, paddingVertical: 13, shadowColor: colors.ink, shadowOpacity: 0.06, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
   brand: { fontFamily: family.sansMedium, fontSize: 9, letterSpacing: 1.8, color: colors.muted },
   name: { fontFamily: family.sansMedium, fontSize: 14, lineHeight: 19, color: colors.ink, marginTop: 2 },

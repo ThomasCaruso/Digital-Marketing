@@ -6,6 +6,7 @@ import { SectionLabel, editorial } from './Editorial';
 import { TextAction } from './DetailHeader';
 import { showToast } from './Toast';
 import { refineFixtureLook, refinementBudget } from '../domain/fixtureEngine';
+import { isUserUpload, slotLabel } from '../domain/garments';
 import { formatMoney } from '../domain/selectors';
 import type { Look, Refinement } from '../domain/types';
 import { useFormStore } from '../state/store';
@@ -13,7 +14,10 @@ import { colors } from '../theme/tokens';
 const adjustments: Refinement[] = ['Less formal', 'More formal', 'Lower price', 'Different shoes', 'Warmer', 'More relaxed'];
 export function LookPieces({ look }: { look: Look }) {
   const router = useRouter();
-  return <View><SectionLabel>The pieces</SectionLabel>{look.products.map((product, index) => <MotionPressable key={product.id} accessibilityRole="button" accessibilityLabel={'Inspect ' + product.brand + ' ' + product.name} onPress={() => router.push({ pathname: '/product', params: { id: product.id } })} style={styles.piece}><Text style={editorial.secondary}>{String(index + 1).padStart(2, '0')}</Text><View style={{ flex: 1 }}><Text style={editorial.body}>{product.name}</Text><Text style={editorial.secondary}>{product.brand} · {product.color}</Text></View><Text style={editorial.secondary}>{formatMoney(product.priceCents)} →</Text></MotionPressable>)}</View>;
+  return <View><SectionLabel>The pieces</SectionLabel>{look.products.map((product, index) => {
+    const uploaded = isUserUpload(product);
+    return <MotionPressable key={product.id} accessibilityRole="button" accessibilityLabel={uploaded ? 'Edit ' + product.name + ', your uploaded ' + slotLabel(product.slot).toLowerCase() : 'Inspect ' + product.brand + ' ' + product.name} onPress={() => uploaded ? router.push({ pathname: '/add-piece', params: { editId: product.id } }) : router.push({ pathname: '/product', params: { id: product.id } })} style={styles.piece}><Text style={editorial.secondary}>{String(index + 1).padStart(2, '0')}</Text><View style={{ flex: 1 }}><Text style={editorial.body}>{product.name}</Text><Text style={editorial.secondary}>{uploaded ? 'Your upload · ' + slotLabel(product.slot) : product.brand + ' · ' + product.color}</Text></View><Text style={editorial.secondary}>{uploaded ? 'Edit' : formatMoney(product.priceCents)} →</Text></MotionPressable>;
+  })}</View>;
 }
 export function LookActions({ look, occasion, onAdjusted }: { look: Look; occasion: string; onAdjusted?: (look: Look) => void }) {
   const router = useRouter();

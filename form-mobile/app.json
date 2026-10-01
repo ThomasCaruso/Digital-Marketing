@@ -36,6 +36,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#f4f1ea"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FORM uses your photo library so you can add your own clothing pieces. Photos you add stay on this device.",
+          "cameraPermission": "FORM uses the camera so you can photograph your own clothing pieces.",
+          "microphonePermission": false
+        }
       ]
     ]
   }

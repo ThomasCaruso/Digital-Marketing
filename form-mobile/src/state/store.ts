@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { createSavedSnapshot } from '../domain/transforms';
-import type { Look, PassedLook, Product, Profile, ReviewStatus, SavedLook, SavedPiece, Session } from '../domain/types';
+import { selectionKey, userGarmentToProduct, type TryOnSelectionItem } from '../domain/garments';
+import type { Look, PassedLook, Product, Profile, ReviewStatus, SavedLook, SavedPiece, Session, UserGarment } from '../domain/types';
 export const DEFAULT_PROFILE: Profile = {
   name: 'Thomas', height: '6′0″', topSize: 'M', waist: '30', inseam: '32', shoe: '10',
   budgetCents: 50000, styles: ['Minimal', 'Elevated casual', 'Classic'],
@@ -13,6 +14,10 @@ interface DiscoveryUndo { productId: string; session: number; }
 interface FormState {
   onboardingComplete: boolean; profile: Profile; sessions: Session[]; activeSessionId: string | null;
   saved: SavedLook[]; passed: PassedLook[]; savedPieces: SavedPiece[];
+  /** Metadata for garments the user photographed. Images stay in app document storage; URIs only here. */
+  userGarments: UserGarment[];
+  /** Temporary try-on selection — deliberately NOT persisted; a selection is never a stored try-on. */
+  tryOnSelection: TryOnSelectionItem[];
   recommendationReview: Record<string, ReviewStatus>; recommendationSession: number;
   discoveryUndo: DiscoveryUndo | null;
   reviewPiece: (product: Product, status: ReviewStatus) => boolean; undoPieceReview: () => string | null;
@@ -22,12 +27,14 @@ interface FormState {
   toggleSaved: (look: Look, occasion: string) => boolean; removeSaved: (id: string) => void;
   markPassed: (look: Look, occasion: string) => void;
   togglePiece: (product: Product) => boolean; passPiece: (product: Product) => void; refreshSelection: () => void;
+  addUserGarment: (garment: UserGarment) => void; updateUserGarment: (id: string, patch: Partial<Pick<UserGarment, 'name' | 'color' | 'slot'>>) => void; removeUserGarment: (id: string) => void;
+  toggleTryOnSelection: (item: TryOnSelectionItem) => boolean; clearTryOnSelection: () => void;
   updateProfile: (profile: Profile) => void;
   setOnboardingComplete: (complete: boolean) => void; setHasHydrated: (hydrated: boolean) => void;
 }
 export const useFormStore = create<FormState>()(persist((set, get) => ({
   onboardingComplete: false, profile: DEFAULT_PROFILE, sessions: [], activeSessionId: null,
-  saved: [], passed: [], savedPieces: [], recommendationReview: {}, recommendationSession: 1,
+  saved: [], passed: [], savedPieces: [], userGarments: [], tryOnSelection: [], recommendationReview: {}, recommendationSession: 1,
   discoveryUndo: null,
   selectedLook: null, hasHydrated: false, storageError: false,
   addSession: session => set(state => ({ sessions: [session, ...state.sessions].slice(0, 8), activeSessionId: session.id, selectedLook: session.looks[0] ?? null })),
@@ -85,6 +92,32 @@ export const useFormStore = create<FormState>()(persist((set, get) => ({
     savedPieces: state.savedPieces.filter(p => p.id !== product.id),
   })),
   refreshSelection: () => set(state => ({ discoveryUndo: null, recommendationReview: {}, recommendationSession: state.recommendationSession + 1 })),
+  addUserGarment: garment => set(state => ({ userGarments: [garment, ...state.userGarments] })),
+  // Metadata edits re-derive the embedded Product view so boards already carrying the
+  // piece stay live. Saved looks are frozen snapshots and deliberately keep what they saved.
+  updateUserGarment: (id, patch) => set(state => {
+    const garment = state.userGarments.find(g => g.id === id);
+    if (!garment) return {};
+    const updated = { ...garment, ...patch };
+    const view = userGarmentToProduct(updated);
+    const refresh = (look: Look): Look => look.products.some(p => p.id === id) ? { ...look, products: look.products.map(p => p.id === id ? view : p) } : look;
+    return {
+      userGarments: state.userGarments.map(g => g.id === id ? updated : g),
+      selectedLook: state.selectedLook ? refresh(state.selectedLook) : null,
+      sessions: state.sessions.map(s => ({ ...s, looks: s.looks.map(refresh) })),
+    };
+  }),
+  // Metadata removal only — the copied photo file is deleted by removeGarmentWithFile() at the UI edge.
+  removeUserGarment: id => set(state => ({
+    userGarments: state.userGarments.filter(g => g.id !== id),
+    tryOnSelection: state.tryOnSelection.filter(item => !(item.source === 'user_upload' && item.id === id)),
+  })),
+  toggleTryOnSelection: item => {
+    const exists = get().tryOnSelection.some(entry => selectionKey(entry) === selectionKey(item));
+    set(state => ({ tryOnSelection: exists ? state.tryOnSelection.filter(entry => selectionKey(entry) !== selectionKey(item)) : [...state.tryOnSelection, item] }));
+    return !exists;
+  },
+  clearTryOnSelection: () => set({ tryOnSelection: [] }),
   updateProfile: profile => set({ discoveryUndo: null, profile: { ...profile } }),
   setOnboardingComplete: complete => set({ onboardingComplete: complete }),
   setHasHydrated: hydrated => set({ hasHydrated: hydrated }),
@@ -102,7 +135,7 @@ export const useFormStore = create<FormState>()(persist((set, get) => ({
   partialize: state => ({
     onboardingComplete: state.onboardingComplete, profile: state.profile, sessions: state.sessions,
     activeSessionId: state.activeSessionId, saved: state.saved, passed: state.passed,
-    savedPieces: state.savedPieces, recommendationReview: state.recommendationReview,
+    savedPieces: state.savedPieces, userGarments: state.userGarments, recommendationReview: state.recommendationReview,
     recommendationSession: state.recommendationSession, selectedLook: state.selectedLook,
   }),
   onRehydrateStorage: () => (state, error) => {

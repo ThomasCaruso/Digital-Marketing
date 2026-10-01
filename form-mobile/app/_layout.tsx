@@ -54,6 +54,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="results" />
+        <Stack.Screen name="add-piece" />
       </Stack>}
       <Toast />
     </GestureHandlerRootView>
