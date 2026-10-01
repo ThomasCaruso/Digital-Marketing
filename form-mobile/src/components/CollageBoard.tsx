@@ -92,10 +92,13 @@ const FALLBACK_ASPECT = 280 / 300;
 export function CollageBoard({ look, boardHeight = 420, interactive = true, fill = false, onSwap, onRemovePiece }: { look: Look; boardHeight?: number; interactive?: boolean; fill?: boolean; onSwap?: (product: Product) => void; onRemovePiece?: (product: Product) => void }) {
   const router = useRouter();
   const [active, setActive] = useState<Product | null>(null);
+  const [revealRemove, setRevealRemove] = useState(false);
   const [frame, setFrame] = useState({ w: 0, h: 0 });
   const [measured, setMeasured] = useState<Record<string, number>>({});
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const ratio = frame.h ? frame.w / frame.h : 0.75;
+  // Inspecting a piece always closes any pending remove confirm first.
+  const inspect = (product: Product | null) => { setActive(product); setRevealRemove(false); };
   return <View onLayout={e => setFrame({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={[styles.board, { height: fill ? '100%' : boardHeight }]}>
     {orderedFor(look).map((product, index) => {
       const tile = tileFor(look, index);
@@ -118,14 +121,23 @@ export function CollageBoard({ look, boardHeight = 420, interactive = true, fill
       return <MotionPressable key={product.id} accessibilityRole="button"
         accessibilityLabel={uploaded ? 'Inspect ' + product.name + ', your uploaded ' + slotLabel(product.slot).toLowerCase() : 'Inspect ' + product.brand + ' ' + product.name + ', ' + formatMoney(product.priceCents)}
         accessibilityState={{ expanded: isActive }}
-        onPress={() => setActive(isActive ? null : product)}
-        style={[styles.tile, geometry]}>
+        onPress={() => inspect(isActive ? null : product)}
+        style={[styles.tile, geometry, isActive && styles.tileActive]}>
         {image}
       </MotionPressable>;
     })}
     {active && <View style={styles.card}>
+      {isUserUpload(active) && revealRemove && onRemovePiece ? <View style={styles.confirmRow}>
+        <Text numberOfLines={1} style={styles.confirmText}>Remove this piece?</Text>
+        <MotionPressable accessibilityRole="button" accessibilityLabel={'Keep ' + active.name + ' on this board'} onPress={() => setRevealRemove(false)} style={styles.view}>
+          <Text style={styles.viewText}>Keep</Text>
+        </MotionPressable>
+        <MotionPressable accessibilityRole="button" accessibilityLabel={'Remove ' + active.name + ' from this board'} onPress={() => { const piece = active; inspect(null); onRemovePiece(piece); }} style={styles.view}>
+          <Text style={[styles.viewText, { color: '#9B6F61' }]}>Remove</Text>
+        </MotionPressable>
+      </View> : <>
       {isUserUpload(active) ? <View style={{ flex: 1 }}>
-        <Text style={styles.brand}>YOUR UPLOAD</Text>
+        <Text style={styles.brand}>YOUR PIECE</Text>
         <Text numberOfLines={2} style={styles.name}>{active.name}</Text>
         <Text numberOfLines={1} style={styles.meta}>{slotLabel(active.slot)}{active.color && active.color !== active.name ? ' · ' + active.color : ''}</Text>
       </View> : <View style={{ flex: 1 }}>
@@ -136,13 +148,14 @@ export function CollageBoard({ look, boardHeight = 420, interactive = true, fill
       {!isUserUpload(active) && <MotionPressable accessibilityRole="button" accessibilityLabel={'View ' + active.name + ' details'} onPress={() => router.push({ pathname: '/product', params: { id: active.id } })} style={styles.view}>
         <Text style={styles.viewText}>View</Text><FormIcon name="arrow" size={16} color={colors.ink} />
       </MotionPressable>}
-      {!isUserUpload(active) && onSwap && <MotionPressable accessibilityRole="button" accessibilityLabel={'Swap ' + active.name + ' for an alternative'} onPress={() => { const piece = active; setActive(null); onSwap(piece); }} style={styles.view}>
+      {!isUserUpload(active) && onSwap && <MotionPressable accessibilityRole="button" accessibilityLabel={'Swap ' + active.name + ' for an alternative'} onPress={() => { const piece = active; inspect(null); onSwap(piece); }} style={styles.view}>
         <Text style={styles.viewText}>Swap</Text><FormIcon name="rewind" size={15} color={colors.ink} />
       </MotionPressable>}
-      {isUserUpload(active) && onRemovePiece && <MotionPressable accessibilityRole="button" accessibilityLabel={'Remove ' + active.name + ' from this board'} onPress={() => { const piece = active; setActive(null); onRemovePiece(piece); }} style={styles.view}>
-        <Text style={styles.viewText}>Remove</Text><FormIcon name="close" size={13} color={colors.ink} />
+      {isUserUpload(active) && onRemovePiece && <MotionPressable accessibilityRole="button" accessibilityLabel="More actions for this piece" onPress={() => setRevealRemove(true)} style={styles.overflow}>
+        <FormIcon name="more" size={18} color={colors.ink} />
       </MotionPressable>}
-      <MotionPressable accessibilityRole="button" accessibilityLabel="Close piece details" onPress={() => setActive(null)} style={styles.close}>
+      </>}
+      <MotionPressable accessibilityRole="button" accessibilityLabel="Close piece details" onPress={() => inspect(null)} style={styles.close}>
         <FormIcon name="close" size={15} color={colors.muted} />
       </MotionPressable>
     </View>}
@@ -150,7 +163,8 @@ export function CollageBoard({ look, boardHeight = 420, interactive = true, fill
 }
 const styles = StyleSheet.create({
   board: { width: '100%' },
-  tile: { position: 'absolute', overflow: 'hidden' },
+  tile: { position: 'absolute', overflow: 'hidden', borderRadius: 8, backgroundColor: colors.paper2, shadowColor: colors.ink, shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 },
+  tileActive: { borderWidth: 1.5, borderColor: colors.ink },
   image: { width: '100%', height: '100%' },
   fallback: { flex: 1, backgroundColor: colors.card, padding: '6%' },
   missing: { flex: 1, backgroundColor: colors.paper2, alignItems: 'center', justifyContent: 'center', padding: 10 },
@@ -161,5 +175,8 @@ const styles = StyleSheet.create({
   meta: { fontFamily: family.sans, fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 1 },
   view: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 44, paddingHorizontal: 4 },
   viewText: { fontFamily: family.sansMedium, fontSize: 13, color: colors.ink },
+  overflow: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
+  confirmRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  confirmText: { flex: 1, fontFamily: family.sansMedium, fontSize: 13, lineHeight: 18, color: colors.ink },
   close: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

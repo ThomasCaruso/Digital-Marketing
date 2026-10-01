@@ -17,7 +17,7 @@ import { family } from '../../src/theme/typography';
 export default function EditsScreen() {
   const router = useRouter();
   const { height, width } = useWindowDimensions();
-  const { session, looks, look, occasion } = useCurrentEdit();
+  const { looks, look, occasion } = useCurrentEdit();
   const selectLook = useFormStore(s => s.selectLook);
   const savedLooks = useFormStore(s => s.saved);
   const sessions = useFormStore(s => s.sessions);
@@ -28,7 +28,6 @@ export default function EditsScreen() {
   const boardHeight = Math.round(Math.min(500, Math.max(340, height * 0.47)));
   useEffect(() => { pager.current?.scrollTo({ x: index * pageWidth, animated: false }); }, [index, pageWidth]);
   const saved = look ? savedLooks.some(s => s.id === look.id) : false;
-  const location = session?.request?.location;
   return <EditorialScreen>
     <View style={styles.header}><Text style={editorial.label}>Your Edit</Text><Text style={styles.counter}>{String(look ? index + 1 : 0).padStart(2, '0')} / {String(looks.length).padStart(2, '0')}</Text></View>
     {look ? <>
@@ -44,8 +43,8 @@ export default function EditsScreen() {
           selectLook(next); useFormStore.getState().replaceLook(item, next, occasion); showToast('Removed from this board');
         }} /></View>)}
       </ScrollView>
-      <View style={styles.metaRow}><View style={styles.metaRule} /><Text style={styles.metaText}>{occasion.toUpperCase()}{location ? ' — ' + location.toUpperCase() : ''}</Text><View style={styles.metaRule} /></View>
       <Text maxFontSizeMultiplier={1.2} style={styles.title}>{look.title}</Text>
+      <View style={styles.metaRow}><View style={styles.metaRule} /><Text style={styles.metaText}>{occasion.toUpperCase()} · {look.vibe.toUpperCase()}</Text><View style={styles.metaRule} /></View>
       <Text maxFontSizeMultiplier={1.2} style={styles.description}>{look.description}</Text>
       <View style={styles.totalRow}>
         <View style={styles.totalBlock}>
@@ -53,7 +52,6 @@ export default function EditsScreen() {
           <Text style={styles.totalPrice}>{formatMoney(lookTotalCents(look))}</Text>
         </View>
         <View style={styles.actions}>
-          <MotionPressable accessibilityRole="button" accessibilityLabel={'Try ' + look.title + ' on'} onPress={() => { selectLook(look); router.navigate('/tryon'); }} style={styles.tryAction}><Text style={styles.tryText}>Try this on</Text></MotionPressable>
           <MotionPressable accessibilityRole="button" accessibilityLabel={saved ? 'Remove saved look' : 'Save look'} accessibilityState={{ selected: saved }} onPress={() => { const nowSaved = useFormStore.getState().toggleSaved(look, occasion); showToast(nowSaved ? 'Look saved' : 'Look removed'); }} style={[styles.circle, saved && styles.circleActive]}>
             <FormIcon name="saved" size={19} color={saved ? colors.onAccent : colors.ink} filled={saved} />
           </MotionPressable>
@@ -62,6 +60,7 @@ export default function EditsScreen() {
           </MotionPressable>
         </View>
       </View>
+      <MotionPressable accessibilityRole="button" accessibilityLabel={'Try ' + look.title + ' on'} onPress={() => { selectLook(look); router.navigate('/tryon'); }} style={styles.tryButton}><Text style={styles.tryButtonText}>Try this on</Text></MotionPressable>
       <View style={styles.indicators}>{looks.map((item, i) => <MotionPressable key={item.id} accessibilityRole="button" accessibilityLabel={'Show look ' + (i + 1) + ', ' + item.title} accessibilityState={{ selected: i === index }} onPress={() => selectLook(item)} style={styles.indicatorTouch}><View style={[styles.indicator, i === index && styles.indicatorActive]} /></MotionPressable>)}</View>
     </> : <View style={{ paddingVertical: 70 }}><Text style={editorial.title}>No complete fixture look fits.</Text><Text style={editorial.secondary}>Try a higher budget or adjust your avoided brands and colors.</Text></View>}
     <View style={editorial.rule} />
@@ -83,8 +82,8 @@ const styles = StyleSheet.create({
   totalLabel: { fontFamily: family.sans, fontSize: 9, letterSpacing: 1.8, color: colors.muted, textTransform: 'uppercase' },
   totalPrice: { fontFamily: family.serif, fontSize: 27, lineHeight: 31, color: colors.ink, marginTop: 4 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  tryAction: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 4 },
-  tryText: { fontFamily: family.sansMedium, fontSize: 13, color: colors.ink },
+  tryButton: { marginTop: 16, height: 52, borderRadius: 26, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  tryButtonText: { fontFamily: family.sansMedium, fontSize: 14, color: colors.paper },
   circle: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(17,17,15,0.18)', backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   circleActive: { backgroundColor: colors.ink, borderColor: colors.ink },
   indicators: { flexDirection: 'row', alignSelf: 'center', marginTop: 18 },

@@ -49,24 +49,24 @@ export function DiscoveryCardFace({ product, reason, cardHeight, interactive = f
       </View>
       <View style={styles.actions}>
       <CardControl staticPress interactive={interactive} haptic={false} disabled={!interactive || busy} accessibilityRole="button" accessibilityLabel={'Pass on ' + product.name} accessibilityState={{ disabled: !interactive || busy }} onPressIn={onTouch} onPress={() => onReview?.('passed')} style={styles.circle}>
-        <FormIcon name="close" size={20} />
+        <FormIcon name="close" size={18} />
       </CardControl>
       <CardControl staticPress interactive={interactive} haptic={false} disabled={!interactive || busy} accessibilityRole="button" accessibilityLabel={'Save ' + product.name} accessibilityState={{ disabled: !interactive || busy }} onPressIn={onTouch} onPress={() => onReview?.('saved')} style={styles.circle}>
-        <FormIcon name="heart" size={20} />
+        <FormIcon name="heart" size={18} />
       </CardControl>
       </View>
   </View>;
 }
 const styles = StyleSheet.create({
   card: { backgroundColor: 'transparent' },
-  stage: { flex: 1, overflow: 'hidden' },
+  stage: { flex: 1, overflow: 'hidden', borderRadius: 12 },
   visualTouch: { flex: 1 },
-  copy: { paddingTop: 18, paddingHorizontal: 6 },
+  copy: { paddingTop: 14, paddingHorizontal: 6 },
   brand: { fontFamily: family.sansMedium, fontSize: 10, letterSpacing: 1.8, color: colors.muted },
   titleTouch: { paddingVertical: 2 },
   name: { fontFamily: family.serif, fontSize: 30, lineHeight: 35, letterSpacing: -0.3, color: colors.ink },
   meta: { fontFamily: family.sans, fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 3 },
-  reason: { fontFamily: family.sans, fontSize: 12, lineHeight: 19, color: colors.muted, marginTop: 10 },
-  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 6 },
-  circle: { width: 52, height: 52, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(17,17,15,0.22)', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+  reason: { fontFamily: family.sans, fontSize: 12, lineHeight: 19, color: colors.muted, marginTop: 8 },
+  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingHorizontal: 6 },
+  circle: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(17,17,15,0.18)', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
 });

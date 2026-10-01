@@ -18,24 +18,22 @@ export interface ProductPhotography {
   aspect: number;
 }
 
-/** Stand-ins ship at 4:5 portrait (400 × 500). */
-const STAND_IN_ASPECT = 400 / 500;
+const product = (source: ImageSourcePropType, aspect: number): ProductPhotography => ({ source, aspect });
 
-const product = (source: ImageSourcePropType): ProductPhotography => ({ source, aspect: STAND_IN_ASPECT });
-
+/** Garment plates ship 4:5 portrait; shoes ship square. */
 export const productPhotography: Record<string, ProductPhotography> = {
-  jacket: product(require('../../assets/placeholders/products/outerwear/jacket.png')),
-  overshirt: product(require('../../assets/placeholders/products/outerwear/overshirt.png')),
-  crew: product(require('../../assets/placeholders/products/tops/crew.png')),
-  shirt: product(require('../../assets/placeholders/products/tops/shirt.png')),
-  'fine-knit': product(require('../../assets/placeholders/products/tops/fine-knit.png')),
-  'warm-knit': product(require('../../assets/placeholders/products/tops/warm-knit.png')),
-  pleat: product(require('../../assets/placeholders/products/bottoms/pleat.png')),
-  straight: product(require('../../assets/placeholders/products/bottoms/straight.png')),
-  linen: product(require('../../assets/placeholders/products/bottoms/linen.png')),
-  relaxed: product(require('../../assets/placeholders/products/bottoms/relaxed.png')),
-  sneaker: product(require('../../assets/placeholders/products/shoes/sneaker.png')),
-  loafer: product(require('../../assets/placeholders/products/shoes/loafer.png')),
-  canvas: product(require('../../assets/placeholders/products/shoes/canvas.png')),
-  runner: product(require('../../assets/placeholders/products/shoes/runner.png')),
+  jacket: product(require('../../assets/placeholders/products/outerwear/jacket.jpg'), 1200 / 1500),
+  overshirt: product(require('../../assets/placeholders/products/outerwear/overshirt.jpg'), 2000 / 2500),
+  crew: product(require('../../assets/placeholders/products/tops/crew.jpg'), 1080 / 1350),
+  shirt: product(require('../../assets/placeholders/products/tops/shirt.jpg'), 2000 / 2500),
+  'fine-knit': product(require('../../assets/placeholders/products/tops/fine-knit.jpg'), 1066 / 1333),
+  'warm-knit': product(require('../../assets/placeholders/products/tops/warm-knit.jpg'), 1583 / 1976),
+  pleat: product(require('../../assets/placeholders/products/bottoms/pleat.jpg'), 750 / 937),
+  straight: product(require('../../assets/placeholders/products/bottoms/straight.jpg'), 800 / 1000),
+  linen: product(require('../../assets/placeholders/products/bottoms/linen.jpg'), 567 / 708),
+  relaxed: product(require('../../assets/placeholders/products/bottoms/relaxed.jpg'), 520 / 650),
+  sneaker: product(require('../../assets/placeholders/products/shoes/sneaker.jpg'), 1),
+  loafer: product(require('../../assets/placeholders/products/shoes/loafer.jpg'), 1),
+  canvas: product(require('../../assets/placeholders/products/shoes/canvas.jpg'), 1),
+  runner: product(require('../../assets/placeholders/products/shoes/runner.jpg'), 1),
 };
