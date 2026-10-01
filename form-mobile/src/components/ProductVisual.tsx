@@ -1,12 +1,13 @@
 import { useId } from 'react';
 import { Image, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Stop } from 'react-native-svg';
-import { garmentAssets, previewAssets } from '../data/preview';
+import { previewAssets } from '../data/preview';
+import { productPhotography } from '../data/photography';
 import type { Product } from '../domain/types';
 /** Garment photography first; cutouts and drawings remain as honest fallbacks. */
 export function ProductVisual({ product, gallery = 0, fit = 'contain' }: { product: Product; gallery?: number; fit?: 'contain' | 'cover' }) {
   const sheen = 'fabric' + useId().replace(/[^a-zA-Z0-9]/g, '');
-  const garment = garmentAssets[product.id];
+  const garment = productPhotography[product.id]?.source;
   if (garment) return <Image source={garment} resizeMode={fit} style={{ width: '100%', height: '100%', transform: [{ scale: gallery ? 1.22 : 1 }] }} accessibilityLabel={product.name + (gallery ? ', fixture detail crop' : ', product photograph')} />;
   const assets: Record<string, ImageSourcePropType> = { jacket: previewAssets.jacket, knit: previewAssets.knit, trousers: previewAssets.trousers };
   if (product.assetKey && assets[product.assetKey]) return <Image source={assets[product.assetKey]} resizeMode="contain" style={{ width: '100%', height: '100%', transform: [{ scale: gallery ? 1.22 : 1 }] }} accessibilityLabel={product.name + (gallery ? ', fixture detail crop' : ', fixture image')} />;

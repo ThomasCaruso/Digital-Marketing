@@ -1,8 +1,9 @@
 /**
- * One-shot: emit tonal stand-in PNGs for the garment placeholder slots.
- * The manifest in src/data/preview.ts requires every slot file to exist, so
- * each slot ships as a flat tonal block (product hex blended into paper) until
- * the real studio pack overwrites the same filenames. Demo-only imagery.
+ * One-shot: emit tonal stand-in PNGs for the product placeholder slots.
+ * The manifest in src/data/photography.ts requires every product file to
+ * exist, so each slot ships as a flat tonal block (product hex blended into
+ * paper) until the real studio pack overwrites the same filenames under
+ * assets/placeholders/products/<category>/. Demo-only imagery.
  * Run: node scripts/make-standins.cjs
  */
 const fs = require('node:fs');
@@ -11,13 +12,13 @@ const zlib = require('node:zlib');
 
 const PAPER = [0xf7, 0xf5, 0xf1];
 /** Same product hexes as src/data/catalog.ts (kept literal — the script runs before Metro). */
-const HEXES = {
-  jacket: '#493529', crew: '#e4dace', pleat: '#44423f', sneaker: '#e4ded2',
-  overshirt: '#29231d', shirt: '#e4dace', straight: '#91918e', loafer: '#29231d',
-  'fine-knit': '#9a8a79', linen: '#e4dace', canvas: '#29231d', 'warm-knit': '#29313f',
-  relaxed: '#9a8a79', runner: '#91918e',
+const PRODUCTS = {
+  jacket: ['outerwear', '#493529'], overshirt: ['outerwear', '#29231d'],
+  crew: ['tops', '#e4dace'], shirt: ['tops', '#e4dace'], 'fine-knit': ['tops', '#9a8a79'], 'warm-knit': ['tops', '#29313f'],
+  pleat: ['bottoms', '#44423f'], straight: ['bottoms', '#91918e'], linen: ['bottoms', '#e4dace'], relaxed: ['bottoms', '#9a8a79'],
+  sneaker: ['shoes', '#e4ded2'], loafer: ['shoes', '#29231d'], canvas: ['shoes', '#29231d'], runner: ['shoes', '#91918e'],
 };
-const OUT = path.join(__dirname, '..', 'assets', 'placeholders', 'garments');
+const OUT = path.join(__dirname, '..', 'assets', 'placeholders', 'products');
 const WIDTH = 400, HEIGHT = 500;
 
 let crcTable;
@@ -55,9 +56,10 @@ function blend(hex) {
   return [0, 1, 2].map(i => Math.round(0.35 * [(n >> 16) & 255, (n >> 8) & 255, n & 255][i] + 0.65 * PAPER[i]));
 }
 fs.mkdirSync(OUT, { recursive: true });
-for (const [id, hex] of Object.entries(HEXES)) {
-  const file = path.join(OUT, `${id}.png`);
+for (const [id, [category, hex]] of Object.entries(PRODUCTS)) {
+  const file = path.join(OUT, category, `${id}.png`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, tonalPng(WIDTH, HEIGHT, blend(hex)));
   console.log('stand-in:', path.relative(path.join(__dirname, '..'), file), hex);
 }
-console.log(`Done. ${Object.keys(HEXES).length} tonal stand-ins in assets/placeholders/garments/`);
+console.log(`Done. ${Object.keys(PRODUCTS).length} tonal stand-ins in assets/placeholders/products/`);

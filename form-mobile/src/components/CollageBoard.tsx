@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { MotionPressable } from './MotionPressable';
 import { FormIcon } from './FormIcon';
 import { ProductVisual } from './ProductVisual';
-import { garmentAssets } from '../data/preview';
+import { productPhotography } from '../data/photography';
 import { formatMoney } from '../domain/selectors';
 import type { Look, Product } from '../domain/types';
 import { colors } from '../theme/tokens';
@@ -12,35 +12,50 @@ import { family } from '../theme/typography';
 
 /**
  * A mood board, not a picture of clothes: the look's actual product
- * photography arranged as an asymmetrical collage — unequal sizes, slight
- * rotations, deliberate overlap, heavy negative space. Assembled at runtime
- * from the garment manifest, so any adjustment re-composes the board for free
+ * photography arranged as an asymmetrical collage — one dominant garment,
+ * supporting pieces staggered around it, deliberate negative space, slight
+ * rotations, occasional subtle overlap. Assembled at runtime from the
+ * photography manifest, so any adjustment re-composes the board for free
  * and the imagery stays honest — real per-piece photographs, never a
  * synthesized composite of the whole look.
+ *
+ * Composition is deterministic: it responds only to the number of pieces,
+ * their slots (which piece dominates), and each image's aspect ratio —
+ * never to render order or randomness. Tiles size by image width; height
+ * follows the image's own aspect, so portrait clothing shots, square
+ * product shots, isolated shoes and landscape detail crops all place
+ * without distortion. Declared aspects come from the photography manifest;
+ * each loaded image is re-measured and corrects its tile if the real file
+ * differs, so a dropped-in photo pack needs no code changes.
  */
-interface Tile { x: number; y: number; w: number; h: number; r: number; z: number }
+
+/** x, y, w, maxH are percent of the board (heights clamp to maxH); r in degrees. */
+interface Tile { x: number; y: number; w: number; maxH: number; r: number; z: number }
 const LAYOUTS: Record<number, Tile[]> = {
   2: [
-    { x: 6, y: 8, w: 56, h: 52, r: -2.2, z: 2 },
-    { x: 44, y: 46, w: 46, h: 42, r: 2.4, z: 1 },
+    { x: 8, y: 6, w: 52, maxH: 56, r: -2.0, z: 2 },
+    { x: 44, y: 46, w: 44, maxH: 42, r: 2.2, z: 3 },
   ],
+  // Sparse triangle: dominant top-left, secondary mid-right, tertiary below.
   3: [
-    { x: 5, y: 7, w: 54, h: 44, r: -2.4, z: 2 },
-    { x: 42, y: 36, w: 50, h: 46, r: 1.8, z: 3 },
-    { x: 10, y: 68, w: 44, h: 25, r: -1.6, z: 1 },
+    { x: 5, y: 5, w: 50, maxH: 58, r: -2.2, z: 2 },
+    { x: 57, y: 26, w: 36, maxH: 36, r: 1.8, z: 3 },
+    { x: 20, y: 66, w: 34, maxH: 28, r: -1.5, z: 1 },
   ],
+  // Asymmetric 2+2: a tall left column against two staggered pieces right.
   4: [
-    { x: 4, y: 6, w: 50, h: 42, r: -2.2, z: 2 },
-    { x: 56, y: 3, w: 38, h: 26, r: 2.8, z: 1 },
-    { x: 44, y: 40, w: 48, h: 42, r: 1.6, z: 3 },
-    { x: 8, y: 66, w: 42, h: 27, r: -1.8, z: 1 },
+    { x: 4, y: 4, w: 46, maxH: 54, r: -2.0, z: 2 },
+    { x: 58, y: 8, w: 30, maxH: 26, r: 2.4, z: 1 },
+    { x: 52, y: 42, w: 42, maxH: 46, r: -1.4, z: 3 },
+    { x: 10, y: 62, w: 38, maxH: 32, r: 1.6, z: 1 },
   ],
+  // One dominant garment; the rest support around it.
   5: [
-    { x: 4, y: 5, w: 48, h: 40, r: -2.2, z: 2 },
-    { x: 56, y: 2, w: 36, h: 24, r: 3, z: 1 },
-    { x: 48, y: 32, w: 44, h: 38, r: 1.8, z: 3 },
-    { x: 6, y: 56, w: 42, h: 26, r: -1.6, z: 1 },
-    { x: 30, y: 76, w: 34, h: 21, r: 2.2, z: 2 },
+    { x: 4, y: 4, w: 54, maxH: 60, r: -2.2, z: 3 },
+    { x: 60, y: 6, w: 30, maxH: 24, r: 2.6, z: 1 },
+    { x: 62, y: 38, w: 34, maxH: 34, r: -1.8, z: 2 },
+    { x: 8, y: 66, w: 36, maxH: 26, r: 1.4, z: 1 },
+    { x: 48, y: 74, w: 30, maxH: 22, r: -2.4, z: 2 },
   ],
 };
 /** Deterministic per-look mirroring, so boards vary between looks without randomness. */
@@ -48,6 +63,11 @@ function flipFor(look: Look): boolean {
   let hash = 0;
   for (const ch of look.id) hash = (hash * 31 + ch.charCodeAt(0)) % 997;
   return hash % 2 === 1;
+}
+/** Garments dominate; the first top leads, everything else follows catalog order. */
+function orderedFor(look: Look): Product[] {
+  const lead = look.products.find(p => p.slot === 'top') ?? look.products[0];
+  return [lead, ...look.products.filter(p => p !== lead)];
 }
 function tileFor(look: Look, index: number): Tile {
   const count = Math.max(2, Math.min(5, look.products.length));
@@ -57,6 +77,8 @@ function tileFor(look: Look, index: number): Tile {
   const flipped = flipFor(look);
   return { ...tile, x: flipped ? 100 - tile.x - tile.w : tile.x, r: flipped ? -tile.r : tile.r, y: tile.y + drop };
 }
+/** Portrait illustrated fallback; photography declares its own aspect. */
+const FALLBACK_ASPECT = 280 / 300;
 
 /**
  * `interactive` renders each piece as a tappable tile with the detail card;
@@ -67,19 +89,26 @@ function tileFor(look: Look, index: number): Tile {
 export function CollageBoard({ look, boardHeight = 420, interactive = true, fill = false, onSwap }: { look: Look; boardHeight?: number; interactive?: boolean; fill?: boolean; onSwap?: (product: Product) => void }) {
   const router = useRouter();
   const [active, setActive] = useState<Product | null>(null);
-  return <View style={[styles.board, { height: fill ? '100%' : boardHeight }]}>
-    {look.products.map((product, index) => {
+  const [frame, setFrame] = useState({ w: 0, h: 0 });
+  const [measured, setMeasured] = useState<Record<string, number>>({});
+  const ratio = frame.h ? frame.w / frame.h : 0.75;
+  return <View onLayout={e => setFrame({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={[styles.board, { height: fill ? '100%' : boardHeight }]}>
+    {orderedFor(look).map((product, index) => {
       const tile = tileFor(look, index);
+      const aspect = measured[product.id] ?? productPhotography[product.id]?.aspect ?? FALLBACK_ASPECT;
+      const height = Math.min(tile.w * ratio / aspect, tile.maxH, 98 - tile.y);
+      const photo = productPhotography[product.id]?.source;
       const isActive = active?.id === product.id;
-      const image = garmentAssets[product.id]
-        ? <Image source={garmentAssets[product.id]} resizeMode="cover" style={styles.image} accessibilityLabel={product.name + ', product photograph'} />
+      const image = photo
+        ? <Image source={photo} resizeMode="cover" onLoad={e => { const { width, height: ih } = e.nativeEvent.source; if (width && ih && Math.abs(width / ih - aspect) / aspect > 0.04) setMeasured(m => (m[product.id] === width / ih ? m : { ...m, [product.id]: width / ih })); }} style={styles.image} accessibilityLabel={product.name + ', product photograph'} />
         : <View style={styles.fallback}><ProductVisual product={product} /></View>;
-      if (!interactive) return <View key={product.id} style={[styles.tile, { left: `${tile.x}%`, top: `${tile.y}%`, width: `${tile.w}%`, height: `${tile.h}%`, zIndex: tile.z, transform: [{ rotate: tile.r + 'deg' }] }]}>{image}</View>;
+      const geometry: ViewStyle = { left: `${tile.x}%`, top: `${tile.y}%`, width: `${tile.w}%`, height: `${height}%`, zIndex: tile.z, transform: [{ rotate: tile.r + 'deg' }] };
+      if (!interactive) return <View key={product.id} style={[styles.tile, geometry]}>{image}</View>;
       return <MotionPressable key={product.id} accessibilityRole="button"
         accessibilityLabel={'Inspect ' + product.brand + ' ' + product.name + ', ' + formatMoney(product.priceCents)}
         accessibilityState={{ expanded: isActive }}
         onPress={() => setActive(isActive ? null : product)}
-        style={[styles.tile, { left: `${tile.x}%`, top: `${tile.y}%`, width: `${tile.w}%`, height: `${tile.h}%`, zIndex: tile.z, transform: [{ rotate: tile.r + 'deg' }] }]}>
+        style={[styles.tile, geometry]}>
         {image}
       </MotionPressable>;
     })}
